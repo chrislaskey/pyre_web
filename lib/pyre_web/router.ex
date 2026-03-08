@@ -50,6 +50,9 @@ defmodule PyreWeb.Router do
           get "/js-:md5", PyreWeb.Assets, :js, as: :pyre_web_asset
 
           live "/", PyreWeb.HomeLive, :index, route_opts
+          live "/runs", PyreWeb.RunListLive, :index, route_opts
+          live "/runs/new", PyreWeb.RunNewLive, :new, route_opts
+          live "/runs/:id", PyreWeb.RunShowLive, :show, route_opts
         end
       end
 

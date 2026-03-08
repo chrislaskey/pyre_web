@@ -12,10 +12,17 @@ defmodule PyreWeb.HomeLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="py-8 max-w-6xl mx-auto">
+    <div class="py-8 max-w-6xl mx-auto px-4">
       <h1 class="mb-3 text-xl font-bold">Pyre</h1>
-      <p class="text-gray-800">Multi-agent LLM framework for Phoenix development.</p>
-      <p class="text-gray-600 text-sm">Pyre v{pyre_version()}</p>
+      <p class="text-base-content/80">Multi-agent LLM framework for Phoenix development.</p>
+      <p class="text-base-content/50 text-sm mb-6">Pyre v{pyre_version()}</p>
+
+      <div class="flex gap-3">
+        <.link navigate={pyre_path(@socket, "/runs/new")} class="btn btn-primary">
+          Start a New Run
+        </.link>
+        <.link navigate={pyre_path(@socket, "/runs")} class="btn btn-outline">View Runs</.link>
+      </div>
     </div>
     """
   end

@@ -27,6 +27,18 @@ mix deps.get
 
 ### Setup
 
+#### 1. Configure PubSub
+
+Tell Pyre which PubSub server to use for real-time run updates. This should
+match the PubSub already started in your application's supervision tree:
+
+```elixir
+# config/config.exs
+config :pyre, :pubsub, MyApp.PubSub
+```
+
+#### 2. Add routes
+
 PyreWeb serves its own JavaScript to connect to your app's LiveView socket.
 Your endpoint must have the standard LiveView socket configured:
 
@@ -51,6 +63,24 @@ end
 ```
 
 Visit `/pyre` in your browser to see the PyreWeb interface.
+
+### Pages
+
+| Route | Description |
+|-------|-------------|
+| `/pyre` | Home page with links to start or view runs |
+| `/pyre/runs` | List of all pipeline runs with status |
+| `/pyre/runs/new` | Form to start a new pipeline run |
+| `/pyre/runs/:id` | Streaming output for a specific run |
+
+Run processes are managed by `Pyre.RunServer` — a GenServer per run, supervised
+by a DynamicSupervisor and registered in a Registry. This means:
+
+- **Runs survive page refreshes**: output is buffered in the GenServer and
+  replayed when you navigate back to a run page.
+- **Real-time streaming**: LiveViews subscribe to PubSub for live updates as
+  agents produce output.
+- **Multiple viewers**: any number of browser tabs can watch the same run.
 
 ### How it works
 

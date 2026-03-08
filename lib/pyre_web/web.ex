@@ -13,6 +13,16 @@ defmodule PyreWeb.Web do
     quote do
       use Phoenix.LiveView
       import Phoenix.HTML
+
+      defp pyre_path(socket, path) do
+        prefix = socket.router.__pyre_web_prefix__()
+
+        Phoenix.VerifiedRoutes.unverified_path(
+          socket,
+          socket.router,
+          prefix <> path
+        )
+      end
     end
   end
 

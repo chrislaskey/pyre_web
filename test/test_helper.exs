@@ -6,6 +6,8 @@ Application.put_env(:pyre_web, PyreWeb.Test.Endpoint,
   pubsub_server: PyreWeb.Test.PubSub
 )
 
+Application.put_env(:pyre, :pubsub, PyreWeb.Test.PubSub)
+
 defmodule PyreWeb.Test.Router do
   use Phoenix.Router
   import PyreWeb.Router
@@ -16,7 +18,7 @@ defmodule PyreWeb.Test.Router do
 
   scope "/" do
     pipe_through :browser
-    pyre_web "/pyre"
+    pyre_web("/pyre")
   end
 end
 
@@ -31,6 +33,8 @@ defmodule PyreWeb.Test.Endpoint do
   plug PyreWeb.Test.Router
 end
 
+# Pyre application auto-starts Registry, DynamicSupervisor, and
+# Jido starts its TaskSupervisor. We only need PubSub and the endpoint.
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: PyreWeb.Test.PubSub},

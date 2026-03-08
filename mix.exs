@@ -27,7 +27,7 @@ defmodule PyreWeb.MixProject do
 
   defp deps do
     [
-      # {:pyre, path: "../pyre"},
+      {:pyre, path: "../pyre", only: :test},
       {:phoenix_live_view, "~> 1.0"},
       {:jason, "~> 1.0"},
       {:lazy_html, ">= 0.1.0", only: :test}

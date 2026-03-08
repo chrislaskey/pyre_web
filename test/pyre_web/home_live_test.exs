@@ -7,6 +7,18 @@ defmodule PyreWeb.HomeLiveTest do
     assert html =~ "Multi-agent LLM framework"
   end
 
+  test "links to the new run page with correct prefix", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/pyre")
+    assert html =~ ~s|href="/pyre/runs/new"|
+    assert html =~ "Start a New Run"
+  end
+
+  test "links to the runs list page", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/pyre")
+    assert html =~ ~s|href="/pyre/runs"|
+    assert html =~ "View Runs"
+  end
+
   test "displays pyre version", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/pyre")
 
