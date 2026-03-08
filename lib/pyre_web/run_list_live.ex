@@ -55,6 +55,7 @@ defmodule PyreWeb.RunListLive do
               <tr>
                 <th>ID</th>
                 <th>Status</th>
+                <th>Phase</th>
                 <th>Description</th>
                 <th>Started</th>
               </tr>
@@ -74,6 +75,7 @@ defmodule PyreWeb.RunListLive do
                     {status_label(run.status)}
                   </span>
                 </td>
+                <td class="text-sm text-base-content/70">{phase_label(run.phase)}</td>
                 <td class="max-w-md truncate">{truncate(run.feature_description, 80)}</td>
                 <td class="text-sm text-base-content/70">{format_time(run.started_at)}</td>
               </tr>
@@ -87,13 +89,23 @@ defmodule PyreWeb.RunListLive do
 
   defp status_badge_class(:running), do: "badge-warning"
   defp status_badge_class(:complete), do: "badge-success"
+  defp status_badge_class(:stopped), do: "badge-neutral"
   defp status_badge_class(:error), do: "badge-error"
   defp status_badge_class(_), do: "badge-neutral"
 
   defp status_label(:running), do: "Running"
   defp status_label(:complete), do: "Complete"
+  defp status_label(:stopped), do: "Stopped"
   defp status_label(:error), do: "Error"
   defp status_label(_), do: "Unknown"
+
+  defp phase_label(:planning), do: "Planning"
+  defp phase_label(:designing), do: "Design"
+  defp phase_label(:implementing), do: "Implementation"
+  defp phase_label(:testing), do: "Testing"
+  defp phase_label(:reviewing), do: "Review"
+  defp phase_label(:complete), do: "Complete"
+  defp phase_label(_), do: ""
 
   defp truncate(text, max) when byte_size(text) <= max, do: text
   defp truncate(text, max), do: String.slice(text, 0, max) <> "..."
