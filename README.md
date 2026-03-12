@@ -59,6 +59,28 @@ end
 Without this configuration, the pipeline still runs but the Shipper will skip
 PR creation.
 
+#### 2b. Configure Allowed Paths (monorepos)
+
+If your agents need to read or write files outside the working directory (e.g.,
+sibling apps in a monorepo), configure additional allowed paths:
+
+```bash
+export PYRE_ALLOWED_PATHS="/path/to/apps/other,/path/to/libs/shared"
+```
+
+Or in your application config:
+
+```elixir
+# config/runtime.exs
+config :pyre, allowed_paths: [
+  "/path/to/apps/other",
+  "/path/to/libs/shared"
+]
+```
+
+Relative paths are resolved against the working directory. See the
+[Pyre README](../pyre/README.md) for full details.
+
 #### 3. Add routes
 
 PyreWeb serves its own JavaScript to connect to your app's LiveView socket.
@@ -103,6 +125,15 @@ by a DynamicSupervisor and registered in a Registry. This means:
 - **Real-time streaming**: LiveViews subscribe to PubSub for live updates as
   agents produce output.
 - **Multiple viewers**: any number of browser tabs can watch the same run.
+
+### File Attachments
+
+The "New Run" form supports file attachments via paste, drag-and-drop, or file
+browser. Accepted formats include images (PNG, JPG, GIF, WebP) and text files
+(Markdown, JSON, CSV, HTML, CSS, JS). Up to 10 files, 10 MB each.
+
+Image attachments are sent as vision content to the LLM, so agents like the
+Designer can reference pasted screenshots or mockups directly.
 
 ### How it works
 
