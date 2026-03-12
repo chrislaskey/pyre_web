@@ -114,62 +114,50 @@ defmodule PyreWeb.RunNewLive do
             class="textarea textarea-bordered w-full h-32 font-mono text-sm"
             placeholder="Build a products listing page with search and pagination..."
           >{Phoenix.HTML.Form.input_value(@form, :feature_description)}</textarea>
-        </div>
 
-        <div class="mb-4">
-          <label class="label mb-1">
-            <span class="label-text font-medium">Attachments</span>
-          </label>
-          <p class="text-sm text-base-content/50 mb-2">
-            Attach mockups, specs, or data files. All agents will see these.
-          </p>
-
-          <div id="attachment-upload" phx-hook=".PasteUpload">
+          <div id="attachment-upload" phx-hook=".PasteUpload" class="mt-3">
             <.live_file_input upload={@uploads.attachments} class="hidden" />
 
-            <div :if={@uploads.attachments.entries != []} class="flex flex-col gap-2 mb-2">
+            <div
+              :for={entry <- @uploads.attachments.entries}
+              class="flex items-center gap-3 p-3 border border-base-300 rounded-lg bg-base-200/50 mb-2"
+            >
+              <.live_img_preview
+                :if={String.starts_with?(entry.client_type, "image/")}
+                entry={entry}
+                class="max-h-24 rounded border border-base-300"
+              />
               <div
-                :for={entry <- @uploads.attachments.entries}
-                class="flex items-center gap-3 p-2 border border-base-300 rounded-lg bg-base-200/50"
+                :if={not String.starts_with?(entry.client_type, "image/")}
+                class="flex items-center justify-center w-10 h-10 rounded border border-base-300 bg-base-200 text-base-content/40 text-xs font-mono shrink-0"
               >
-                <.live_img_preview
-                  :if={String.starts_with?(entry.client_type, "image/")}
-                  entry={entry}
-                  class="max-h-12 rounded border border-base-300"
-                />
-                <span
-                  :if={not String.starts_with?(entry.client_type, "image/")}
-                  class="text-base-content/30 text-lg leading-none"
-                >
-                  &#128196;
-                </span>
-                <div class="flex-1 min-w-0">
-                  <span class="text-sm font-mono truncate block">{entry.client_name}</span>
-                  <span class="text-xs text-base-content/50">{format_file_size(entry.client_size)}</span>
-                </div>
+                {entry.client_name |> Path.extname() |> String.trim_leading(".")}
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="text-sm text-base-content/70">{entry.client_name}</span>
                 <button
                   type="button"
                   phx-click="cancel-upload"
                   phx-value-ref={entry.ref}
-                  class="btn btn-ghost btn-xs"
+                  class="btn btn-ghost btn-xs w-fit"
                 >
                   Remove
                 </button>
-                <p
-                  :for={err <- upload_errors(@uploads.attachments, entry)}
-                  class="text-error text-xs"
-                >
-                  {upload_error_to_string(err)}
-                </p>
               </div>
+              <p
+                :for={err <- upload_errors(@uploads.attachments, entry)}
+                class="text-error text-sm"
+              >
+                {upload_error_to_string(err)}
+              </p>
             </div>
 
             <div
-              :if={length(@uploads.attachments.entries) < 10}
+              :if={@uploads.attachments.entries == []}
               phx-drop-target={@uploads.attachments.ref}
               class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center text-sm text-base-content/50"
             >
-              Paste or drop files, or
+              Paste or drop a file, or
               <label class="link cursor-pointer" for={@uploads.attachments.ref}>
                 browse
               </label>
@@ -224,7 +212,7 @@ defmodule PyreWeb.RunNewLive do
             const input = this.el.querySelector("input[type=file]");
             if (!input) return;
 
-            // Don't paste if drop zone is gone (max 10 files reached)
+            // Don't paste if an image is already attached
             if (!this.el.querySelector("[phx-drop-target]")) return;
 
             const dt = new DataTransfer();
@@ -257,12 +245,8 @@ defmodule PyreWeb.RunNewLive do
     """
   end
 
-  defp format_file_size(bytes) when bytes < 1024, do: "#{bytes} B"
-  defp format_file_size(bytes) when bytes < 1_048_576, do: "#{Float.round(bytes / 1024, 1)} KB"
-  defp format_file_size(bytes), do: "#{Float.round(bytes / 1_048_576, 1)} MB"
-
-  defp upload_error_to_string(:too_large), do: "File is too large (max 10 MB)"
+  defp upload_error_to_string(:too_large), do: "File too large (max 10 MB)"
+  defp upload_error_to_string(:not_accepted), do: "Invalid file type"
   defp upload_error_to_string(:too_many_files), do: "Too many files (max 10)"
-  defp upload_error_to_string(:not_accepted), do: "File type not accepted"
   defp upload_error_to_string(err), do: "Upload error: #{inspect(err)}"
 end
