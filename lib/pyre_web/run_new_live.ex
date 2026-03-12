@@ -24,8 +24,7 @@ defmodule PyreWeb.RunNewLive do
         skipped_stages: MapSet.new()
       )
       |> allow_upload(:attachments,
-        accept:
-          ~w(.txt .md .csv .json .ex .exs .html .css .js .ts .png .jpg .jpeg .gif .webp),
+        accept: ~w(.txt .md .csv .json .html .css .js .png .jpg .jpeg .gif .webp),
         max_entries: 10,
         max_file_size: 10_000_000
       )
