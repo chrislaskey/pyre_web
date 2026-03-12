@@ -37,7 +37,31 @@ match the PubSub already started in your application's supervision tree:
 config :pyre, :pubsub, MyApp.PubSub
 ```
 
-#### 2. Add routes
+#### 2. Configure GitHub (for Shipper)
+
+To enable the Shipper agent (creates branches and opens GitHub PRs), configure
+your repository in `config/runtime.exs`:
+
+```elixir
+# config/runtime.exs
+if github_token = System.get_env("GITHUB_TOKEN") do
+  config :pyre, :github,
+    default_token: github_token,
+    repositories: [
+      [
+        owner: System.get_env("PYRE_GITHUB_OWNER"),
+        repo: System.get_env("PYRE_GITHUB_REPO"),
+        token: System.get_env("PYRE_GITHUB_TOKEN", github_token),
+        base_branch: System.get_env("PYRE_GITHUB_BASE_BRANCH", "main")
+      ]
+    ]
+end
+```
+
+Without this configuration, the pipeline still runs but the Shipper will skip
+PR creation.
+
+#### 3. Add routes
 
 PyreWeb serves its own JavaScript to connect to your app's LiveView socket.
 Your endpoint must have the standard LiveView socket configured:

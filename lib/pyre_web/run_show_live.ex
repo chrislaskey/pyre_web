@@ -13,10 +13,11 @@ defmodule PyreWeb.RunShowLive do
     {:designing, "Design"},
     {:implementing, "Implementation"},
     {:testing, "Testing"},
-    {:reviewing, "Review"}
+    {:reviewing, "Review"},
+    {:shipping, "Shipping"}
   ]
 
-  @phase_order [:planning, :designing, :implementing, :testing, :reviewing]
+  @phase_order [:planning, :designing, :implementing, :testing, :reviewing, :shipping]
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
