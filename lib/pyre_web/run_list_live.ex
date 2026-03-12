@@ -104,6 +104,7 @@ defmodule PyreWeb.RunListLive do
   defp phase_label(:implementing), do: "Implementation"
   defp phase_label(:testing), do: "Testing"
   defp phase_label(:reviewing), do: "Review"
+  defp phase_label(:shipping), do: "Shipping"
   defp phase_label(:complete), do: "Complete"
   defp phase_label(_), do: ""
 

@@ -5,10 +5,12 @@ defmodule PyreWeb.RunNewLive do
   use PyreWeb.Web, :live_view
 
   @toggleable_stages [
+    {:planning, "Product Manager"},
     {:designing, "Designer"},
     {:implementing, "Programmer"},
     {:testing, "Test Writer"},
-    {:reviewing, "QA Reviewer"}
+    {:reviewing, "QA Reviewer"},
+    {:shipping, "Shipper"}
   ]
 
   @impl true
@@ -96,11 +98,6 @@ defmodule PyreWeb.RunNewLive do
             Uncheck stages to skip them. Skipped stages use general best practices as fallback.
           </p>
           <div class="flex flex-col gap-2">
-            <label class="label cursor-pointer justify-start gap-2">
-              <input type="checkbox" checked disabled class="checkbox checkbox-sm" />
-              <span class="label-text">Product Manager</span>
-              <span class="text-xs text-base-content/40">(always enabled)</span>
-            </label>
             <label
               :for={{stage_key, label} <- @toggleable_stages}
               class="label cursor-pointer justify-start gap-2"
