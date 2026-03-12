@@ -115,7 +115,7 @@ defmodule PyreWeb.RunNewLive do
             placeholder="Build a products listing page with search and pagination..."
           >{Phoenix.HTML.Form.input_value(@form, :feature_description)}</textarea>
 
-          <div id="attachment-upload" phx-hook=".PasteUpload" class="mt-3">
+          <div id="attachment-upload" phx-hook="PasteUpload" class="mt-3">
             <.live_file_input upload={@uploads.attachments} class="hidden" />
 
             <div
@@ -153,7 +153,6 @@ defmodule PyreWeb.RunNewLive do
             </div>
 
             <div
-              :if={@uploads.attachments.entries == []}
               phx-drop-target={@uploads.attachments.ref}
               class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center text-sm text-base-content/50"
             >
@@ -202,35 +201,6 @@ defmodule PyreWeb.RunNewLive do
       </form>
     </div>
 
-    <script :type={Phoenix.LiveView.ColocatedHook} name=".PasteUpload">
-      export default {
-        mounted() {
-          this.handlePaste = (e) => {
-            const files = e.clipboardData?.files;
-            if (!files?.length) return;
-
-            const input = this.el.querySelector("input[type=file]");
-            if (!input) return;
-
-            // Don't paste if an image is already attached
-            if (!this.el.querySelector("[phx-drop-target]")) return;
-
-            const dt = new DataTransfer();
-            for (const f of files) {
-              if (f.type.startsWith("image/")) dt.items.add(f);
-            }
-            if (dt.files.length) {
-              input.files = dt.files;
-              input.dispatchEvent(new Event("input", { bubbles: true }));
-            }
-          };
-          window.addEventListener("paste", this.handlePaste);
-        },
-        destroyed() {
-          window.removeEventListener("paste", this.handlePaste);
-        }
-      }
-    </script>
     """
   end
 
