@@ -169,9 +169,7 @@ defmodule PyreWeb.RunShowLive do
           phx-update="stream"
           class="font-mono text-sm p-4 max-h-[600px] overflow-y-auto bg-neutral text-neutral-content whitespace-pre-wrap"
         >
-          <span :for={{dom_id, item} <- @streams.items} id={dom_id} class={item_class(item.type)}>
-            {item.content}
-          </span>
+          <pre :for={{dom_id, item} <- @streams.items} id={dom_id} class={item_class(item.type)}>{item.content}</pre>
         </div>
       </div>
     </div>
