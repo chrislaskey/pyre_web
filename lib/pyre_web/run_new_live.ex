@@ -4,13 +4,22 @@ defmodule PyreWeb.RunNewLive do
   """
   use PyreWeb.Web, :live_view
 
-  @toggleable_stages [
+  @feature_build_stages [
     {:planning, "Product Manager"},
     {:designing, "Designer"},
     {:implementing, "Programmer"},
     {:testing, "Test Writer"},
     {:reviewing, "QA Reviewer"},
     {:shipping, "Shipper"}
+  ]
+
+  @iterative_build_stages [
+    {:planning, "Product Manager"},
+    {:designing, "Designer"},
+    {:architecting, "Software Architect"},
+    {:branch_setup, "Branch Setup"},
+    {:engineering, "Software Engineer"},
+    {:reviewing, "PR Reviewer"}
   ]
 
   @impl true
@@ -20,7 +29,8 @@ defmodule PyreWeb.RunNewLive do
       |> assign(
         page_title: "New Run — Pyre",
         form: to_form(%{"feature_description" => ""}, as: :run),
-        toggleable_stages: @toggleable_stages,
+        workflow: :feature_build,
+        toggleable_stages: @feature_build_stages,
         skipped_stages: MapSet.new()
       )
       |> allow_upload(:attachments,
@@ -35,6 +45,23 @@ defmodule PyreWeb.RunNewLive do
   @impl true
   def handle_event("validate", %{"run" => params}, socket) do
     {:noreply, assign(socket, form: to_form(params, as: :run))}
+  end
+
+  def handle_event("select_workflow", %{"workflow" => workflow_str}, socket) do
+    {workflow, stages} =
+      case workflow_str do
+        "iterative_build" -> {:iterative_build, @iterative_build_stages}
+        _ -> {:feature_build, @feature_build_stages}
+      end
+
+    socket =
+      assign(socket,
+        workflow: workflow,
+        toggleable_stages: stages,
+        skipped_stages: MapSet.new()
+      )
+
+    {:noreply, socket}
   end
 
   def handle_event("toggle_stage", %{"stage" => stage_str}, socket) do
@@ -63,7 +90,9 @@ defmodule PyreWeb.RunNewLive do
       attachments =
         consume_uploaded_entries(socket, :attachments, fn %{path: path}, entry ->
           content = File.read!(path)
-          media_type = apply(Pyre.Plugins.Artifact, :media_type_from_filename, [entry.client_name])
+
+          media_type =
+            apply(Pyre.Plugins.Artifact, :media_type_from_filename, [entry.client_name])
 
           {:ok,
            %{
@@ -77,7 +106,11 @@ defmodule PyreWeb.RunNewLive do
 
       case apply(Pyre.RunServer, :start_run, [
              desc,
-             [skipped_stages: skipped, attachments: attachments]
+             [
+               workflow: socket.assigns.workflow,
+               skipped_stages: skipped,
+               attachments: attachments
+             ]
            ]) do
         {:ok, run_id} ->
           {:noreply, push_navigate(socket, to: pyre_path(socket, "/runs/#{run_id}"))}
@@ -173,6 +206,38 @@ defmodule PyreWeb.RunNewLive do
 
         <div class="mb-4">
           <label class="label mb-1">
+            <span class="label-text font-medium">Workflow</span>
+          </label>
+          <div class="flex gap-4">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input
+                type="radio"
+                name="workflow"
+                value="feature_build"
+                checked={@workflow == :feature_build}
+                phx-click="select_workflow"
+                phx-value-workflow="feature_build"
+                class="radio radio-sm radio-primary"
+              />
+              <span class="label-text">Feature Build</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-2">
+              <input
+                type="radio"
+                name="workflow"
+                value="iterative_build"
+                checked={@workflow == :iterative_build}
+                phx-click="select_workflow"
+                phx-value-workflow="iterative_build"
+                class="radio radio-sm radio-primary"
+              />
+              <span class="label-text">Iterative Build</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="label mb-1">
             <span class="label-text font-medium">Workflow Stages</span>
           </label>
           <p class="text-sm text-base-content/50 mb-2">
@@ -200,7 +265,6 @@ defmodule PyreWeb.RunNewLive do
         </button>
       </form>
     </div>
-
     """
   end
 

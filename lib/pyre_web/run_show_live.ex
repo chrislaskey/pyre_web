@@ -8,7 +8,7 @@ defmodule PyreWeb.RunShowLive do
   """
   use PyreWeb.Web, :live_view
 
-  @phases [
+  @feature_build_phases [
     {:planning, "Planning"},
     {:designing, "Design"},
     {:implementing, "Implementation"},
@@ -17,7 +17,25 @@ defmodule PyreWeb.RunShowLive do
     {:shipping, "Shipping"}
   ]
 
-  @phase_order [:planning, :designing, :implementing, :testing, :reviewing, :shipping]
+  @feature_build_order [:planning, :designing, :implementing, :testing, :reviewing, :shipping]
+
+  @iterative_build_phases [
+    {:planning, "Planning"},
+    {:designing, "Design"},
+    {:architecting, "Architecture"},
+    {:branch_setup, "Branch Setup"},
+    {:engineering, "Engineering"},
+    {:reviewing, "Review"}
+  ]
+
+  @iterative_build_order [
+    :planning,
+    :designing,
+    :architecting,
+    :branch_setup,
+    :engineering,
+    :reviewing
+  ]
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -29,6 +47,14 @@ defmodule PyreWeb.RunShowLive do
 
     case apply(Pyre.RunServer, :get_state, [id]) do
       {:ok, run_state} ->
+        workflow = Map.get(run_state, :workflow, :feature_build)
+
+        {phases, phase_order} =
+          case workflow do
+            :iterative_build -> {@iterative_build_phases, @iterative_build_order}
+            _ -> {@feature_build_phases, @feature_build_order}
+          end
+
         socket =
           socket
           |> assign(
@@ -38,7 +64,8 @@ defmodule PyreWeb.RunShowLive do
             phase: run_state.phase,
             feature_description: run_state.feature_description,
             skipped_stages: run_state.skipped_stages,
-            phases: @phases,
+            phases: phases,
+            phase_order: phase_order,
             confirm_stop: false
           )
           |> stream(:items, run_state.log)
@@ -126,6 +153,7 @@ defmodule PyreWeb.RunShowLive do
 
       <.workflow_panel
         phases={@phases}
+        phase_order={@phase_order}
         current={@phase}
         status={@status}
         skipped={@skipped_stages}
@@ -140,7 +168,11 @@ defmodule PyreWeb.RunShowLive do
           id="output-stream"
           phx-update="stream"
           class="font-mono text-sm p-4 max-h-[600px] overflow-y-auto bg-neutral text-neutral-content whitespace-pre-wrap"
-        ><span :for={{dom_id, item} <- @streams.items} id={dom_id} class={item_class(item.type)}>{item.content}</span></div>
+        >
+          <span :for={{dom_id, item} <- @streams.items} id={dom_id} class={item_class(item.type)}>
+            {item.content}
+          </span>
+        </div>
       </div>
     </div>
     """
@@ -160,6 +192,7 @@ defmodule PyreWeb.RunShowLive do
           current={@current}
           status={@status}
           skipped={@skipped}
+          phase_order={@phase_order}
         />
       </div>
     </div>
@@ -167,10 +200,22 @@ defmodule PyreWeb.RunShowLive do
   end
 
   defp stage_row(assigns) do
-    assigns = assign(assigns, :stage_status, stage_status(assigns.phase_key, assigns.current, assigns.status, assigns.skipped))
+    assigns =
+      assign(
+        assigns,
+        :stage_status,
+        stage_status(
+          assigns.phase_key,
+          assigns.current,
+          assigns.status,
+          assigns.skipped,
+          assigns.phase_order
+        )
+      )
+
     ~H"""
     <div class="flex items-center gap-2">
-      <%= if toggleable?(@phase_key, @current, @status) do %>
+      <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
         <input
           type="checkbox"
           class="toggle toggle-sm toggle-primary"
@@ -194,9 +239,9 @@ defmodule PyreWeb.RunShowLive do
     """
   end
 
-  defp stage_status(phase_key, current, run_status, skipped) do
-    current_idx = Enum.find_index(@phase_order, &(&1 == current)) || 0
-    phase_idx = Enum.find_index(@phase_order, &(&1 == phase_key)) || 0
+  defp stage_status(phase_key, current, run_status, skipped, phase_order) do
+    current_idx = Enum.find_index(phase_order, &(&1 == current)) || 0
+    phase_idx = Enum.find_index(phase_order, &(&1 == phase_key)) || 0
 
     cond do
       phase_key in skipped && phase_idx < current_idx -> :skipped
@@ -245,12 +290,12 @@ defmodule PyreWeb.RunShowLive do
     """
   end
 
-  defp toggleable?(phase_key, current, status) do
+  defp toggleable?(phase_key, current, status, phase_order) do
     if status != :running do
       false
     else
-      current_idx = Enum.find_index(@phase_order, &(&1 == current)) || 0
-      phase_idx = Enum.find_index(@phase_order, &(&1 == phase_key)) || 0
+      current_idx = Enum.find_index(phase_order, &(&1 == current)) || 0
+      phase_idx = Enum.find_index(phase_order, &(&1 == phase_key)) || 0
       phase_idx > current_idx
     end
   end

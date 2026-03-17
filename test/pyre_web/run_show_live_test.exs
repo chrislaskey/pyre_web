@@ -115,6 +115,43 @@ defmodule PyreWeb.RunShowLiveTest do
     File.rm_rf!(tmp_dir)
   end
 
+  test "renders iterative build phases for iterative workflow", %{conn: conn} do
+    AgentMock.setup([
+      "Requirements.",
+      "Design.",
+      "Architecture plan.",
+      "## Branch Name\n\nfeature/change\n\n## PR Title\n\nChange\n\n## PR Body\n\nChange.",
+      "Implementation done.",
+      "APPROVE\n\nGood."
+    ])
+
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "pyre_show_ib_test_#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+
+    {:ok, id} =
+      Pyre.RunServer.start_run("Build a test page",
+        workflow: :iterative_build,
+        llm: AgentMock,
+        streaming: false,
+        project_dir: tmp_dir
+      )
+
+    wait_for_status(id, :complete)
+
+    {:ok, _view, html} = live(conn, "/pyre/runs/#{id}")
+    # Iterative build phases are present in the workflow panel
+    assert html =~ "Architecture"
+    assert html =~ "Branch Setup"
+    assert html =~ "Engineering"
+    # Feature build phases should NOT appear in the workflow panel
+    # (Note: "Implementation" may appear in output stream, so check the panel specifically)
+    refute html =~ "Shipping"
+
+    File.rm_rf!(tmp_dir)
+  end
+
   defp wait_for_status(id, expected_status, timeout \\ 15_000) do
     deadline = System.monotonic_time(:millisecond) + timeout
 
