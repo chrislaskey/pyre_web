@@ -31,7 +31,8 @@ defmodule PyreWeb.RunNewLive do
         form: to_form(%{"feature_description" => ""}, as: :run),
         workflow: :iterative_build,
         toggleable_stages: @iterative_build_stages,
-        skipped_stages: MapSet.new()
+        skipped_stages: MapSet.new(),
+        llm_backend: :claude_cli
       )
       |> allow_upload(:attachments,
         accept: ~w(.txt .md .csv .json .html .css .js .png .jpg .jpeg .gif .webp),
@@ -77,6 +78,16 @@ defmodule PyreWeb.RunNewLive do
     {:noreply, assign(socket, skipped_stages: skipped)}
   end
 
+  def handle_event("select_backend", %{"backend" => backend}, socket) do
+    llm_backend =
+      case backend do
+        "claude_cli" -> :claude_cli
+        _ -> :req_llm
+      end
+
+    {:noreply, assign(socket, llm_backend: llm_backend)}
+  end
+
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :attachments, ref)}
   end
@@ -104,12 +115,15 @@ defmodule PyreWeb.RunNewLive do
 
       skipped = MapSet.to_list(socket.assigns.skipped_stages)
 
+      llm_module = llm_module_for(socket.assigns.llm_backend)
+
       case apply(Pyre.RunServer, :start_run, [
              desc,
              [
                workflow: socket.assigns.workflow,
                skipped_stages: skipped,
-               attachments: attachments
+               attachments: attachments,
+               llm: llm_module
              ]
            ]) do
         {:ok, run_id} ->
@@ -238,6 +252,41 @@ defmodule PyreWeb.RunNewLive do
 
         <div class="mb-4">
           <label class="label mb-1">
+            <span class="label-text font-medium">LLM Backend</span>
+          </label>
+          <div class="flex gap-4">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input
+                type="radio"
+                name="llm_backend"
+                value="req_llm"
+                checked={@llm_backend == :req_llm}
+                phx-click="select_backend"
+                phx-value-backend="req_llm"
+                class="radio radio-sm radio-primary"
+              />
+              <span class="label-text">API (ReqLLM)</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-2">
+              <input
+                type="radio"
+                name="llm_backend"
+                value="claude_cli"
+                checked={@llm_backend == :claude_cli}
+                phx-click="select_backend"
+                phx-value-backend="claude_cli"
+                class="radio radio-sm radio-primary"
+              />
+              <span class="label-text">Claude CLI</span>
+            </label>
+          </div>
+          <p class="text-sm text-base-content/50 mt-1">
+            API uses ReqLLM with per-token billing. Claude CLI uses the local <code>claude</code> command (free with Pro/Max subscription).
+          </p>
+        </div>
+
+        <div class="mb-4">
+          <label class="label mb-1">
             <span class="label-text font-medium">Workflow Stages</span>
           </label>
           <p class="text-sm text-base-content/50 mb-2">
@@ -278,6 +327,9 @@ defmodule PyreWeb.RunNewLive do
     </div>
     """
   end
+
+  defp llm_module_for(:claude_cli), do: Pyre.LLM.ClaudeCLI
+  defp llm_module_for(_), do: Pyre.LLM.ReqLLM
 
   defp upload_error_to_string(:too_large), do: "File too large (max 10 MB)"
   defp upload_error_to_string(:not_accepted), do: "Invalid file type"
