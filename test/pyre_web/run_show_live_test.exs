@@ -16,6 +16,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
+        workflow: :feature_build,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -46,6 +47,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
+        workflow: :feature_build,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -84,6 +86,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a products listing page",
+        workflow: :feature_build,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -105,7 +108,12 @@ defmodule PyreWeb.RunShowLiveTest do
     File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
 
     {:ok, id} =
-      Pyre.RunServer.start_run("Test", llm: AgentMock, streaming: false, project_dir: tmp_dir)
+      Pyre.RunServer.start_run("Test",
+        workflow: :feature_build,
+        llm: AgentMock,
+        streaming: false,
+        project_dir: tmp_dir
+      )
 
     {:ok, _view, html} = live(conn, "/pyre/runs/#{id}")
     assert html =~ ~s|href="/pyre/runs"|

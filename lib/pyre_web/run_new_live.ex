@@ -29,8 +29,8 @@ defmodule PyreWeb.RunNewLive do
       |> assign(
         page_title: "New Run — Pyre",
         form: to_form(%{"feature_description" => ""}, as: :run),
-        workflow: :feature_build,
-        toggleable_stages: @feature_build_stages,
+        workflow: :iterative_build,
+        toggleable_stages: @iterative_build_stages,
         skipped_stages: MapSet.new()
       )
       |> allow_upload(:attachments,
