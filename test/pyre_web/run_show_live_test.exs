@@ -12,7 +12,7 @@ defmodule PyreWeb.RunShowLiveTest do
     AgentMock.setup(["Req.", "Design.", "Impl.", "Tests.", "APPROVE\n\nGood."])
 
     tmp_dir = Path.join(System.tmp_dir!(), "pyre_show_test_#{System.unique_integer([:positive])}")
-    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
@@ -43,7 +43,7 @@ defmodule PyreWeb.RunShowLiveTest do
     tmp_dir =
       Path.join(System.tmp_dir!(), "pyre_show_pubsub_test_#{System.unique_integer([:positive])}")
 
-    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
@@ -82,7 +82,7 @@ defmodule PyreWeb.RunShowLiveTest do
     tmp_dir =
       Path.join(System.tmp_dir!(), "pyre_show_desc_test_#{System.unique_integer([:positive])}")
 
-    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a products listing page",
@@ -105,7 +105,7 @@ defmodule PyreWeb.RunShowLiveTest do
     tmp_dir =
       Path.join(System.tmp_dir!(), "pyre_show_back_test_#{System.unique_integer([:positive])}")
 
-    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("Test",
@@ -136,7 +136,7 @@ defmodule PyreWeb.RunShowLiveTest do
     tmp_dir =
       Path.join(System.tmp_dir!(), "pyre_show_ib_test_#{System.unique_integer([:positive])}")
 
-    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",

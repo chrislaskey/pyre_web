@@ -18,7 +18,7 @@ defmodule PyreWeb.RunListLiveTest do
     AgentMock.setup(["Req.", "Design.", "Impl.", "Tests.", "APPROVE\n\nGood."])
 
     tmp_dir = Path.join(System.tmp_dir!(), "pyre_list_test_#{System.unique_integer([:positive])}")
-    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/runs"))
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("List test feature",

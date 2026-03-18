@@ -62,6 +62,7 @@ defmodule PyreWeb.RunShowLive do
             run_id: id,
             status: run_state.status,
             phase: run_state.phase,
+            feature: Map.get(run_state, :feature),
             feature_description: run_state.feature_description,
             skipped_stages: run_state.skipped_stages,
             phases: phases,
@@ -145,6 +146,10 @@ defmodule PyreWeb.RunShowLive do
             </button>
           <% end %>
         <% end %>
+      </div>
+
+      <div :if={@feature} class="mb-2 text-sm text-base-content/50 font-mono">
+        Feature: {@feature}
       </div>
 
       <div class="mb-4 text-sm text-base-content/70">

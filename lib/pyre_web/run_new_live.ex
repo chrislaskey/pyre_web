@@ -28,7 +28,9 @@ defmodule PyreWeb.RunNewLive do
       socket
       |> assign(
         page_title: "New Run — Pyre",
-        form: to_form(%{"feature_description" => ""}, as: :run),
+        form: to_form(%{"feature_description" => "", "feature_name" => ""}, as: :run),
+        feature_name: "",
+        feature_suggestions: [],
         workflow: :iterative_build,
         toggleable_stages: @iterative_build_stages,
         skipped_stages: MapSet.new(),
@@ -45,7 +47,25 @@ defmodule PyreWeb.RunNewLive do
 
   @impl true
   def handle_event("validate", %{"run" => params}, socket) do
-    {:noreply, assign(socket, form: to_form(params, as: :run))}
+    feature_name = Map.get(params, "feature_name", "")
+
+    suggestions =
+      if String.length(String.trim(feature_name)) > 0 do
+        features_dir = Path.expand("priv/pyre/features", File.cwd!())
+
+        apply(Pyre.Plugins.Artifact, :list_features, [features_dir])
+        |> Enum.filter(&String.contains?(&1, String.downcase(String.trim(feature_name))))
+      else
+        features_dir = Path.expand("priv/pyre/features", File.cwd!())
+        apply(Pyre.Plugins.Artifact, :list_features, [features_dir])
+      end
+
+    {:noreply,
+     assign(socket,
+       form: to_form(params, as: :run),
+       feature_name: feature_name,
+       feature_suggestions: suggestions
+     )}
   end
 
   def handle_event("select_workflow", %{"workflow" => workflow_str}, socket) do
@@ -92,8 +112,9 @@ defmodule PyreWeb.RunNewLive do
     {:noreply, cancel_upload(socket, :attachments, ref)}
   end
 
-  def handle_event("submit", %{"run" => %{"feature_description" => desc}}, socket) do
-    desc = String.trim(desc)
+  def handle_event("submit", %{"run" => params}, socket) do
+    desc = String.trim(Map.get(params, "feature_description", ""))
+    feature_name = String.trim(Map.get(params, "feature_name", ""))
 
     if desc == "" do
       {:noreply, put_flash(socket, :error, "Feature description cannot be empty.")}
@@ -117,13 +138,16 @@ defmodule PyreWeb.RunNewLive do
 
       llm_module = llm_module_for(socket.assigns.llm_backend)
 
+      feature = if feature_name == "", do: nil, else: feature_name
+
       case apply(Pyre.RunServer, :start_run, [
              desc,
              [
                workflow: socket.assigns.workflow,
                skipped_stages: skipped,
                attachments: attachments,
-               llm: llm_module
+               llm: llm_module,
+               feature: feature
              ]
            ]) do
         {:ok, run_id} ->
@@ -216,6 +240,27 @@ defmodule PyreWeb.RunNewLive do
               {upload_error_to_string(err)}
             </p>
           </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="label mb-1">
+            <span class="label-text font-medium">Feature Name</span>
+            <span class="label-text-alt text-base-content/50">Optional</span>
+          </label>
+          <input
+            type="text"
+            name="run[feature_name]"
+            value={@feature_name}
+            list="feature-suggestions"
+            placeholder="e.g. products-page"
+            class="input input-bordered w-full font-mono text-sm"
+          />
+          <datalist id="feature-suggestions">
+            <option :for={name <- @feature_suggestions} value={name} />
+          </datalist>
+          <p class="text-sm text-base-content/50 mt-1">
+            Group related runs under a feature name. Leave empty for a standalone run.
+          </p>
         </div>
 
         <div class="mb-4">

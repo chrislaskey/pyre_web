@@ -55,6 +55,7 @@ defmodule PyreWeb.RunListLive do
               <tr>
                 <th>ID</th>
                 <th>Status</th>
+                <th>Feature</th>
                 <th>Phase</th>
                 <th>Description</th>
                 <th>Started</th>
@@ -75,6 +76,7 @@ defmodule PyreWeb.RunListLive do
                     {status_label(run.status)}
                   </span>
                 </td>
+                <td class="text-sm font-mono text-base-content/70">{Map.get(run, :feature) || ""}</td>
                 <td class="text-sm text-base-content/70">{phase_label(run.phase)}</td>
                 <td class="max-w-md truncate">{truncate(run.feature_description, 80)}</td>
                 <td class="text-sm text-base-content/70">{format_time(run.started_at)}</td>
