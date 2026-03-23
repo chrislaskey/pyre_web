@@ -14,6 +14,19 @@ defmodule PyreWeb.Socket do
 
   The path (`/pyre`) should match the path used when mounting `pyre_web`
   in the router.
+
+  ## Presence
+
+  To enable connection presence tracking (showing connected native apps on the
+  homepage), add `PyreWeb.Presence` to the host app's supervision tree:
+
+      children = [
+        # ... existing children ...
+        PyreWeb.Presence
+      ]
+
+  Presence reuses the PubSub server from `config :pyre, :pubsub` — no
+  additional configuration is needed.
   """
   use Phoenix.Socket
 
@@ -23,10 +36,21 @@ defmodule PyreWeb.Socket do
 
   @impl true
   def connect(params, socket, _connect_info) do
-    socket = assign(socket, :params, params)
+    connection_id = params["connection_id"]
+
+    socket =
+      socket
+      |> assign(:params, params)
+      |> assign(:connection_id, connection_id)
+
     {:ok, socket}
   end
 
   @impl true
-  def id(_socket), do: nil
+  def id(socket) do
+    case socket.assigns[:connection_id] do
+      nil -> nil
+      connection_id -> "pyre_connection:#{connection_id}"
+    end
+  end
 end

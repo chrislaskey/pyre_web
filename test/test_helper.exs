@@ -38,6 +38,7 @@ end
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: PyreWeb.Test.PubSub},
+    PyreWeb.Presence,
     PyreWeb.Test.Endpoint
   ],
   strategy: :one_for_one

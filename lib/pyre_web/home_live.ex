@@ -4,9 +4,25 @@ defmodule PyreWeb.HomeLive do
   """
   use PyreWeb.Web, :live_view
 
+  @presence_topic "pyre:connections"
+
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, page_title: "Pyre")}
+    presences =
+      if connected?(socket) do
+        Phoenix.PubSub.subscribe(pubsub(), @presence_topic)
+        PyreWeb.Presence.list_connections()
+      else
+        []
+      end
+
+    {:ok, assign(socket, page_title: "Pyre", presences: presences)}
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff", payload: diff}, socket) do
+    presences = update_presences(socket.assigns.presences, diff)
+    {:noreply, assign(socket, :presences, presences)}
   end
 
   @impl true
@@ -23,6 +39,12 @@ defmodule PyreWeb.HomeLive do
         </.link>
         <.link navigate={pyre_path(@socket, "/runs")} class="btn btn-outline">View Runs</.link>
       </div>
+
+      <.live_component
+        module={PyreWeb.ConnectionPresenceComponent}
+        id="connection-presence"
+        presences={@presences}
+      />
     </div>
     """
   end
@@ -32,5 +54,22 @@ defmodule PyreWeb.HomeLive do
       nil -> "unknown"
       vsn -> to_string(vsn)
     end
+  end
+
+  defp pubsub do
+    Application.get_env(:pyre, :pubsub, Phoenix.PubSub)
+  end
+
+  defp update_presences(presences, %{joins: joins, leaves: leaves}) do
+    leave_ids = Map.keys(leaves) |> MapSet.new()
+
+    remaining = Enum.reject(presences, &MapSet.member?(leave_ids, &1.connection_id))
+
+    new =
+      Enum.map(joins, fn {connection_id, %{metas: [meta | _]}} ->
+        Map.put(meta, :connection_id, connection_id)
+      end)
+
+    remaining ++ new
   end
 end

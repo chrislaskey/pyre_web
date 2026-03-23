@@ -125,6 +125,22 @@ socket "/pyre", PyreWeb.Socket,
 > WebSocket connections at the given path before they reach the router's
 > plug pipeline. This is the same pattern used by `Phoenix.LiveView.Socket`.
 
+To track connected native apps on the homepage, add `PyreWeb.Presence` to
+your supervision tree. It reuses the PubSub server from `config :pyre, :pubsub`
+— no additional configuration is needed:
+
+```elixir
+# lib/my_app/application.ex
+children = [
+  # ... existing children ...
+  PyreWeb.Presence
+]
+```
+
+This enables the homepage to display which native app instances are currently
+connected, along with their system information (computer name, CPU, memory,
+OS version).
+
 ### Pages
 
 | Route | Description |
