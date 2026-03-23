@@ -83,17 +83,6 @@ Relative paths are resolved against the working directory. See the
 
 #### 3. Add routes
 
-PyreWeb serves its own JavaScript to connect to your app's LiveView socket.
-Your endpoint must have the standard LiveView socket configured:
-
-```elixir
-# lib/my_app_web/endpoint.ex
-socket "/live", Phoenix.LiveView.Socket
-```
-
-This is included by default in Phoenix applications generated with
-`mix phx.new`. No additional endpoint configuration is needed.
-
 Add the PyreWeb route to your router:
 
 ```elixir
@@ -107,6 +96,34 @@ end
 ```
 
 Visit `/pyre` in your browser to see the PyreWeb interface.
+
+#### 4. (Optional) Support Pyre native app
+
+PyreWeb serves its own JavaScript to connect to your app's LiveView socket.
+Your endpoint must have the standard LiveView socket configured:
+
+```elixir
+# lib/my_app_web/endpoint.ex
+socket "/live", Phoenix.LiveView.Socket
+```
+
+This is included by default in Phoenix applications generated with
+`mix phx.new`.
+
+To enable the Pyre native app to connect over Phoenix channels, add the
+`PyreWeb.Socket` to your endpoint. The path must match the route prefix you
+use in step 4 below (e.g., `/pyre`):
+
+```elixir
+# lib/my_app_web/endpoint.ex
+socket "/pyre", PyreWeb.Socket,
+  websocket: [connect_info: [:peer_data, :x_headers]]
+```
+
+> **Why the endpoint?** Phoenix channels are handled at the endpoint level,
+> not the router. The `socket/3` declaration tells Phoenix to upgrade
+> WebSocket connections at the given path before they reach the router's
+> plug pipeline. This is the same pattern used by `Phoenix.LiveView.Socket`.
 
 ### Pages
 
