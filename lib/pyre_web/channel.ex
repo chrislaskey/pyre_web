@@ -46,10 +46,12 @@ defmodule PyreWeb.Channel do
 
   @impl true
   def handle_info(:after_join, socket) do
-    connection_id = socket.assigns[:connection_id] || socket.id || "anonymous"
-    metadata = socket.assigns[:connection_metadata] || %{}
+    if PyreWeb.Presence.running?() do
+      connection_id = socket.assigns[:connection_id] || socket.id || "anonymous"
+      metadata = socket.assigns[:connection_metadata] || %{}
 
-    {:ok, _} = PyreWeb.Presence.track(socket, connection_id, metadata)
+      {:ok, _} = PyreWeb.Presence.track(socket, connection_id, metadata)
+    end
 
     {:noreply, socket}
   end

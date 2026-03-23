@@ -35,16 +35,32 @@ defmodule PyreWeb.Presence do
   end
 
   @doc """
+  Returns `true` if the Presence tracker has been started.
+
+  When the host app has not added `PyreWeb.Presence` to its supervision
+  tree, all presence operations gracefully no-op.
+  """
+  def running? do
+    :ets.whereis(__MODULE__) != :undefined
+  end
+
+  @doc """
   Returns simplified presence data for the connections topic.
 
   Each entry is a map with `:connection_id` and the metadata sent on join
   (name, cpu_cores, cpu_brand, memory_gb, os_version).
+
+  Returns `[]` if Presence is not running.
   """
   def list_connections do
-    @topic
-    |> list()
-    |> Enum.map(fn {connection_id, %{metas: [meta | _]}} ->
-      Map.put(meta, :connection_id, connection_id)
-    end)
+    if running?() do
+      @topic
+      |> list()
+      |> Enum.map(fn {connection_id, %{metas: [meta | _]}} ->
+        Map.put(meta, :connection_id, connection_id)
+      end)
+    else
+      []
+    end
   end
 end

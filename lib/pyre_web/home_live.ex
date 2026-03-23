@@ -9,7 +9,7 @@ defmodule PyreWeb.HomeLive do
   @impl true
   def mount(_params, _session, socket) do
     presences =
-      if connected?(socket) do
+      if connected?(socket) and PyreWeb.Presence.running?() do
         Phoenix.PubSub.subscribe(pubsub(), @presence_topic)
         PyreWeb.Presence.list_connections()
       else
