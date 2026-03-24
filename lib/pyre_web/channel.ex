@@ -22,6 +22,8 @@ defmodule PyreWeb.Channel do
   def join("pyre:connections", params, socket) do
     send(self(), :after_join)
 
+    connection_id = socket.assigns[:connection_id] || params["connection_id"] || socket.id || "anonymous"
+
     metadata = %{
       name: params["name"] || "Unknown",
       cpu_cores: params["cpu_cores"],
@@ -30,7 +32,15 @@ defmodule PyreWeb.Channel do
       os_version: params["os_version"]
     }
 
-    socket = assign(socket, :connection_metadata, metadata)
+    # Subscribe to actions targeted at this specific connection
+    if pubsub = Application.get_env(:pyre, :pubsub) do
+      Phoenix.PubSub.subscribe(pubsub, "pyre:action:input:#{connection_id}")
+    end
+
+    socket =
+      socket
+      |> assign(:connection_id, connection_id)
+      |> assign(:connection_metadata, metadata)
 
     {:ok, %{message: "connected"}, socket}
   end
@@ -42,6 +52,23 @@ defmodule PyreWeb.Channel do
   @impl true
   def handle_in("ping", _params, socket) do
     {:reply, {:ok, %{message: "pong"}}, socket}
+  end
+
+  # Receive streamed output from the client and broadcast to the execution's PubSub topic
+  def handle_in("action_output", %{"execution_id" => id} = payload, socket) do
+    if pubsub = Application.get_env(:pyre, :pubsub) do
+      Phoenix.PubSub.broadcast(pubsub, "pyre:action:output:#{id}", {:action_output, payload})
+    end
+
+    {:noreply, socket}
+  end
+
+  def handle_in("action_complete", %{"execution_id" => id} = payload, socket) do
+    if pubsub = Application.get_env(:pyre, :pubsub) do
+      Phoenix.PubSub.broadcast(pubsub, "pyre:action:output:#{id}", {:action_complete, payload})
+    end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -58,6 +85,12 @@ defmodule PyreWeb.Channel do
 
   def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff"} = msg, socket) do
     push(socket, "presence_diff", msg.payload)
+    {:noreply, socket}
+  end
+
+  # Forward an action from PubSub (originating from HomeLive) to the connected client
+  def handle_info({:action, execution_id, action}, socket) do
+    push(socket, "action", Map.put(action, :execution_id, execution_id))
     {:noreply, socket}
   end
 end
