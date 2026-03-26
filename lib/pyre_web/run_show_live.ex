@@ -65,9 +65,14 @@ defmodule PyreWeb.RunShowLive do
             feature: Map.get(run_state, :feature),
             feature_description: run_state.feature_description,
             skipped_stages: run_state.skipped_stages,
+            interactive_stages: Map.get(run_state, :interactive_stages, MapSet.new()),
+            waiting_for_input: Map.get(run_state, :waiting_for_input, false),
+            waiting_phase: run_state.phase,
+            backend: Map.get(run_state, :backend, :other),
             phases: phases,
             phase_order: phase_order,
-            confirm_stop: false
+            confirm_stop: false,
+            reply_text: ""
           )
           |> stream(:items, run_state.log)
 
@@ -86,6 +91,29 @@ defmodule PyreWeb.RunShowLive do
       :ok -> {:noreply, socket}
       {:error, _} -> {:noreply, socket}
     end
+  end
+
+  def handle_event("toggle_interactive_stage", %{"stage" => stage_str}, socket) do
+    stage = String.to_existing_atom(stage_str)
+
+    case apply(Pyre.RunServer, :toggle_interactive_stage, [socket.assigns.run_id, stage]) do
+      :ok -> {:noreply, socket}
+      {:error, _} -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("send_reply", %{"reply" => text}, socket) do
+    apply(Pyre.RunServer, :send_reply, [socket.assigns.run_id, text])
+    {:noreply, assign(socket, reply_text: "")}
+  end
+
+  def handle_event("continue_stage", _params, socket) do
+    apply(Pyre.RunServer, :continue_stage, [socket.assigns.run_id])
+    {:noreply, socket}
+  end
+
+  def handle_event("update_reply", %{"reply" => text}, socket) do
+    {:noreply, assign(socket, reply_text: text)}
   end
 
   def handle_event("request_stop", _params, socket) do
@@ -118,6 +146,18 @@ defmodule PyreWeb.RunShowLive do
     {:noreply, assign(socket, skipped_stages: skipped)}
   end
 
+  def handle_info({:pyre_interactive_stages, _id, stages}, socket) do
+    {:noreply, assign(socket, interactive_stages: stages)}
+  end
+
+  def handle_info({:pyre_waiting_for_input, _id, phase}, socket) do
+    {:noreply, assign(socket, waiting_for_input: true, waiting_phase: phase)}
+  end
+
+  def handle_info({:pyre_stage_resumed, _id, _phase}, socket) do
+    {:noreply, assign(socket, waiting_for_input: false, reply_text: "")}
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -133,7 +173,7 @@ defmodule PyreWeb.RunShowLive do
         <span class={"badge badge-sm #{status_badge_class(@status)}"}>
           {status_label(@status)}
         </span>
-        <%= if @status == :running do %>
+        <%= if @status == :running or @waiting_for_input do %>
           <%= if @confirm_stop do %>
             <span class="ml-auto flex items-center gap-2">
               <span class="text-sm text-warning">Stop this run?</span>
@@ -162,6 +202,8 @@ defmodule PyreWeb.RunShowLive do
         current={@phase}
         status={@status}
         skipped={@skipped_stages}
+        interactive={@interactive_stages}
+        waiting_for_input={@waiting_for_input}
       />
 
       <div class="border border-base-300 rounded-lg overflow-hidden">
@@ -177,6 +219,13 @@ defmodule PyreWeb.RunShowLive do
           <pre :for={{dom_id, item} <- @streams.items} id={dom_id} class={item_class(item.type)}>{item.content}</pre>
         </div>
       </div>
+
+      <.reply_panel
+        :if={@waiting_for_input}
+        waiting_phase={@waiting_phase}
+        backend={@backend}
+        reply_text={@reply_text}
+      />
     </div>
     """
   end
@@ -187,7 +236,7 @@ defmodule PyreWeb.RunShowLive do
       <div class="bg-base-200 px-4 py-2 border-b border-base-300">
         <span class="text-sm font-medium">Workflow</span>
       </div>
-      <div class="p-3 flex flex-wrap gap-x-6 gap-y-2">
+      <div class="p-3 flex flex-col gap-y-2">
         <.stage_row
           :for={{phase_key, label} <- @phases}
           phase_key={phase_key}
@@ -195,6 +244,8 @@ defmodule PyreWeb.RunShowLive do
           current={@current}
           status={@status}
           skipped={@skipped}
+          interactive={@interactive}
+          waiting_for_input={@waiting_for_input}
           phase_order={@phase_order}
         />
       </div>
@@ -217,7 +268,8 @@ defmodule PyreWeb.RunShowLive do
       )
 
     ~H"""
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
+      <%!-- Skip toggle --%>
       <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
         <input
           type="checkbox"
@@ -234,10 +286,78 @@ defmodule PyreWeb.RunShowLive do
           disabled
         />
       <% end %>
-      <span class={"text-sm #{stage_label_class(@stage_status)}"}>
+
+      <span class={"text-sm flex-1 #{stage_label_class(@stage_status)}"}>
         {@label}
       </span>
-      <.stage_badge status={@stage_status} />
+
+      <.stage_badge status={@stage_status} waiting={@waiting_for_input and @phase_key == @current} />
+
+      <%!-- Interactive toggle --%>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <span class="text-xs text-base-content/40">interactive</span>
+        <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
+          <input
+            type="checkbox"
+            class="toggle toggle-xs toggle-accent"
+            checked={@phase_key in @interactive}
+            phx-click="toggle_interactive_stage"
+            phx-value-stage={@phase_key}
+          />
+        <% else %>
+          <input
+            type="checkbox"
+            class="toggle toggle-xs"
+            checked={@phase_key in @interactive}
+            disabled
+          />
+        <% end %>
+      </label>
+    </div>
+    """
+  end
+
+  defp reply_panel(assigns) do
+    ~H"""
+    <div class="mt-4 border border-accent/40 rounded-lg overflow-hidden">
+      <div class="bg-accent/10 px-4 py-2 border-b border-accent/30">
+        <span class="text-sm font-medium text-accent">
+          Waiting for your input — {phase_label(@waiting_phase)}
+        </span>
+      </div>
+      <div class="p-4">
+        <%= if @backend == :claude_cli do %>
+          <form phx-submit="send_reply" phx-change="update_reply">
+            <textarea
+              name="reply"
+              rows="3"
+              class="textarea textarea-bordered w-full font-mono text-sm mb-3"
+              placeholder="Type your reply..."
+              value={@reply_text}
+              autofocus
+            ></textarea>
+            <div class="flex justify-between items-center">
+              <button type="submit" class="btn btn-accent btn-sm" disabled={@reply_text == ""}>
+                Send Reply
+              </button>
+              <button
+                type="button"
+                phx-click="continue_stage"
+                class="btn btn-ghost btn-sm"
+              >
+                Continue &rarr;
+              </button>
+            </div>
+          </form>
+        <% else %>
+          <p class="text-sm text-base-content/50 mb-3">
+            Interactive replies require the Claude CLI backend.
+          </p>
+          <button phx-click="continue_stage" class="btn btn-ghost btn-sm">
+            Continue &rarr;
+          </button>
+        <% end %>
+      </div>
     </div>
     """
   end
@@ -263,6 +383,12 @@ defmodule PyreWeb.RunShowLive do
   defp stage_label_class(:will_skip), do: "text-base-content/30 line-through"
   defp stage_label_class(:error), do: "text-error font-medium"
   defp stage_label_class(_), do: "text-base-content/70"
+
+  defp stage_badge(%{status: :active, waiting: true} = assigns) do
+    ~H"""
+    <span class="badge badge-xs badge-accent">waiting</span>
+    """
+  end
 
   defp stage_badge(%{status: :active} = assigns) do
     ~H"""
@@ -302,6 +428,17 @@ defmodule PyreWeb.RunShowLive do
       phase_idx > current_idx
     end
   end
+
+  defp phase_label(:planning), do: "Planning"
+  defp phase_label(:designing), do: "Design"
+  defp phase_label(:implementing), do: "Implementation"
+  defp phase_label(:testing), do: "Testing"
+  defp phase_label(:reviewing), do: "Review"
+  defp phase_label(:shipping), do: "Shipping"
+  defp phase_label(:architecting), do: "Architecture"
+  defp phase_label(:branch_setup), do: "Branch Setup"
+  defp phase_label(:engineering), do: "Engineering"
+  defp phase_label(other), do: to_string(other)
 
   defp status_badge_class(:running), do: "badge-warning"
   defp status_badge_class(:complete), do: "badge-success"
