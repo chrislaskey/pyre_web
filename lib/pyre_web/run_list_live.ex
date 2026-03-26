@@ -29,66 +29,6 @@ defmodule PyreWeb.RunListLive do
     {:noreply, assign(socket, runs: runs)}
   end
 
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <div class="py-8 max-w-4xl mx-auto px-4">
-      <div class="mb-6 flex items-center gap-4">
-        <.link
-          navigate={pyre_path(@socket, "")}
-          class="text-sm text-base-content/50 hover:text-base-content"
-        >
-          &larr; Home
-        </.link>
-        <h1 class="text-xl font-bold">Runs</h1>
-        <.link navigate={pyre_path(@socket, "/runs/new")} class="btn btn-primary btn-sm ml-auto">
-          New Run
-        </.link>
-      </div>
-
-      <%= if @runs == [] do %>
-        <p class="text-base-content/50">No runs yet.</p>
-      <% else %>
-        <div class="overflow-x-auto">
-          <table class="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Feature</th>
-                <th>Phase</th>
-                <th>Description</th>
-                <th>Started</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr :for={run <- @runs}>
-                <td>
-                  <.link
-                    navigate={pyre_path(@socket, "/runs/#{run.id}")}
-                    class="link link-primary font-mono text-sm"
-                  >
-                    {run.id}
-                  </.link>
-                </td>
-                <td>
-                  <span class={"badge badge-sm #{status_badge_class(run.status)}"}>
-                    {status_label(run.status)}
-                  </span>
-                </td>
-                <td class="text-sm font-mono text-base-content/70">{Map.get(run, :feature) || ""}</td>
-                <td class="text-sm text-base-content/70">{phase_label(run.phase)}</td>
-                <td class="max-w-md truncate">{truncate(run.feature_description, 80)}</td>
-                <td class="text-sm text-base-content/70">{format_time(run.started_at)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      <% end %>
-    </div>
-    """
-  end
-
   defp status_badge_class(:running), do: "badge-warning"
   defp status_badge_class(:complete), do: "badge-success"
   defp status_badge_class(:stopped), do: "badge-neutral"
