@@ -1,11 +1,5 @@
-<div class="py-8 max-w-4xl mx-auto px-4">
+<.page_layout current_page={:runs} prefix={pyre_path(@socket, "")}>
   <div class="mb-6 flex items-center gap-4">
-    <.link
-      navigate={pyre_path(@socket, "")}
-      class="text-sm text-base-content/50 hover:text-base-content"
-    >
-      &larr; Home
-    </.link>
     <h1 class="text-xl font-bold">Runs</h1>
     <.link navigate={pyre_path(@socket, "/runs/new")} class="btn btn-primary btn-sm ml-auto">
       New Run
@@ -51,4 +45,4 @@
       </table>
     </div>
   <% end %>
-</div>
+</.page_layout>

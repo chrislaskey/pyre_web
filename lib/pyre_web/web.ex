@@ -13,6 +13,7 @@ defmodule PyreWeb.Web do
     quote do
       use Phoenix.LiveView
       import Phoenix.HTML
+      import PyreWeb.Components.Layouts
 
       defp pyre_path(socket, path) do
         prefix = socket.router.__pyre_web_prefix__()

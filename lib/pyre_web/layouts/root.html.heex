@@ -6,7 +6,7 @@
     <meta name="csrf-token" content={Phoenix.Controller.get_csrf_token()} />
     <title>{assigns[:page_title] || "Pyre"}</title>
 
-<!-- DaisyUI + Tailwind from CDN -->
+    <!-- DaisyUI + Tailwind from CDN -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <link
       href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css"
@@ -53,14 +53,6 @@
     </script>
   </head>
   <body>
-    <div class="navbar bg-base-200 px-4 min-h-0">
-      <div class="flex-1">
-        <span class="text-sm font-semibold text-base-content/70">Pyre</span>
-      </div>
-      <div class="flex-none">
-        <.theme_selector />
-      </div>
-    </div>
     {@inner_content}
   </body>
 </html>

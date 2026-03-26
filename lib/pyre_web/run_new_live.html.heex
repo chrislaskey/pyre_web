@@ -1,11 +1,5 @@
-<div class="py-8 max-w-4xl mx-auto px-4">
-  <div class="mb-6 flex items-center gap-4">
-    <.link
-      navigate={pyre_path(@socket, "")}
-      class="text-sm text-base-content/50 hover:text-base-content"
-    >
-      &larr; Home
-    </.link>
+<.page_layout current_page={:new_run} prefix={pyre_path(@socket, "")}>
+  <div class="mb-6">
     <h1 class="text-xl font-bold">New Run</h1>
   </div>
 
@@ -162,7 +156,8 @@
         </label>
       </div>
       <p class="text-sm text-base-content/50 mt-1">
-        API uses ReqLLM with per-token billing. Claude CLI uses the local <code>claude</code> command (free with Pro/Max subscription).
+        API uses ReqLLM with per-token billing. Claude CLI uses the local <code>claude</code>
+        command (free with Pro/Max subscription).
       </p>
     </div>
 
@@ -204,4 +199,4 @@
       Run Pipeline
     </button>
   </form>
-</div>
+</.page_layout>
