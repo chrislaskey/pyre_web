@@ -8,7 +8,7 @@ defmodule PyreWeb.RunShowLive do
   """
   use PyreWeb.Web, :live_view
 
-  @feature_build_phases [
+  @overnight_feature_phases [
     {:planning, "Planning"},
     {:designing, "Design"},
     {:implementing, "Implementation"},
@@ -17,25 +17,21 @@ defmodule PyreWeb.RunShowLive do
     {:shipping, "Shipping"}
   ]
 
-  @feature_build_order [:planning, :designing, :implementing, :testing, :reviewing, :shipping]
+  @overnight_feature_order [:planning, :designing, :implementing, :testing, :reviewing, :shipping]
 
-  @iterative_build_phases [
-    {:planning, "Planning"},
-    {:designing, "Design"},
+  @feature_phases [
     {:architecting, "Architecture"},
-    {:branch_setup, "Branch Setup"},
-    {:engineering, "Engineering"},
-    {:reviewing, "Review"}
+    {:pr_setup, "PR Setup"},
+    {:engineering, "Engineering"}
   ]
 
-  @iterative_build_order [
-    :planning,
-    :designing,
-    :architecting,
-    :branch_setup,
-    :engineering,
-    :reviewing
-  ]
+  @feature_order [:architecting, :pr_setup, :engineering]
+
+  @code_review_phases [{:reviewing, "Review"}]
+  @code_review_order [:reviewing]
+
+  @chat_phases [{:generalist, "Generalist"}]
+  @chat_order [:generalist]
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -47,12 +43,14 @@ defmodule PyreWeb.RunShowLive do
 
     case apply(Pyre.RunServer, :get_state, [id]) do
       {:ok, run_state} ->
-        workflow = Map.get(run_state, :workflow, :feature_build)
+        workflow = Map.get(run_state, :workflow, :feature)
 
         {phases, phase_order} =
           case workflow do
-            :iterative_build -> {@iterative_build_phases, @iterative_build_order}
-            _ -> {@feature_build_phases, @feature_build_order}
+            :chat -> {@chat_phases, @chat_order}
+            :feature -> {@feature_phases, @feature_order}
+            :code_review -> {@code_review_phases, @code_review_order}
+            :overnight_feature -> {@overnight_feature_phases, @overnight_feature_order}
           end
 
         socket =
@@ -357,6 +355,7 @@ defmodule PyreWeb.RunShowLive do
     end
   end
 
+  defp phase_label(:generalist), do: "Generalist"
   defp phase_label(:planning), do: "Planning"
   defp phase_label(:designing), do: "Design"
   defp phase_label(:implementing), do: "Implementation"
@@ -364,7 +363,7 @@ defmodule PyreWeb.RunShowLive do
   defp phase_label(:reviewing), do: "Review"
   defp phase_label(:shipping), do: "Shipping"
   defp phase_label(:architecting), do: "Architecture"
-  defp phase_label(:branch_setup), do: "Branch Setup"
+  defp phase_label(:pr_setup), do: "PR Setup"
   defp phase_label(:engineering), do: "Engineering"
   defp phase_label(other), do: to_string(other)
 

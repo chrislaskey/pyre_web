@@ -25,23 +25,37 @@ defmodule PyreWeb.RunNewLiveTest do
     assert html =~ "cannot be empty"
   end
 
-  test "renders workflow selector with Iterative Build default", %{conn: conn} do
+  test "renders workflow selector with Chat default", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/pyre/runs/new")
-    assert html =~ "Feature Build"
-    assert html =~ "Iterative Build"
-    assert html =~ "Product Manager"
-    assert html =~ "Software Architect"
+    assert html =~ "Chat"
+    assert html =~ "Feature"
+    assert html =~ "Code Review"
+    assert html =~ "Overnight Feature"
+    assert html =~ "Generalist"
   end
 
-  test "switching to feature build changes stages", %{conn: conn} do
+  test "switching to overnight feature changes stages", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/pyre/runs/new")
 
-    html = render_click(view, "select_workflow", %{"workflow" => "feature_build"})
+    html = render_click(view, "select_workflow", %{"workflow" => "overnight_feature"})
 
     assert html =~ "Programmer"
     assert html =~ "Test Writer"
     refute html =~ "Software Architect"
     refute html =~ "Software Engineer"
+    refute html =~ "Generalist"
+  end
+
+  test "switching to chat workflow shows generalist stage", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/pyre/runs/new")
+
+    # Switch away first
+    render_click(view, "select_workflow", %{"workflow" => "overnight_feature"})
+    html = render_click(view, "select_workflow", %{"workflow" => "chat"})
+
+    assert html =~ "Generalist"
+    refute html =~ "Product Manager"
+    refute html =~ "Programmer"
   end
 
   test "renders LLM backend selector with API default", %{conn: conn} do
@@ -60,15 +74,26 @@ defmodule PyreWeb.RunNewLiveTest do
     assert html =~ ~s|value="claude_cli"|
   end
 
-  test "switching back to iterative build restores stages", %{conn: conn} do
+  test "switching to feature workflow shows feature stages", %{conn: conn} do
     {:ok, view, _html} = live(conn, "/pyre/runs/new")
 
-    render_click(view, "select_workflow", %{"workflow" => "feature_build"})
-    html = render_click(view, "select_workflow", %{"workflow" => "iterative_build"})
+    html = render_click(view, "select_workflow", %{"workflow" => "feature"})
 
     assert html =~ "Software Architect"
     assert html =~ "Software Engineer"
+    assert html =~ "PR Setup"
     refute html =~ "Programmer"
     refute html =~ "Test Writer"
+    refute html =~ "Generalist"
+  end
+
+  test "switching to code review workflow shows reviewer stage", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/pyre/runs/new")
+
+    html = render_click(view, "select_workflow", %{"workflow" => "code_review"})
+
+    assert html =~ "PR Reviewer"
+    refute html =~ "Software Architect"
+    refute html =~ "Generalist"
   end
 end

@@ -109,25 +109,49 @@
           <input
             type="radio"
             name="workflow"
-            value="iterative_build"
-            checked={@workflow == :iterative_build}
+            value="chat"
+            checked={@workflow == :chat}
             phx-click="select_workflow"
-            phx-value-workflow="iterative_build"
+            phx-value-workflow="chat"
             class="radio radio-sm radio-primary"
           />
-          <span class="label-text">Iterative Build</span>
+          <span class="label-text">Chat</span>
         </label>
         <label class="label cursor-pointer justify-start gap-2">
           <input
             type="radio"
             name="workflow"
-            value="feature_build"
-            checked={@workflow == :feature_build}
+            value="feature"
+            checked={@workflow == :feature}
             phx-click="select_workflow"
-            phx-value-workflow="feature_build"
+            phx-value-workflow="feature"
             class="radio radio-sm radio-primary"
           />
-          <span class="label-text">Feature Build</span>
+          <span class="label-text">Feature</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            type="radio"
+            name="workflow"
+            value="code_review"
+            checked={@workflow == :code_review}
+            phx-click="select_workflow"
+            phx-value-workflow="code_review"
+            class="radio radio-sm radio-primary"
+          />
+          <span class="label-text">Code Review</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            type="radio"
+            name="workflow"
+            value="overnight_feature"
+            checked={@workflow == :overnight_feature}
+            phx-click="select_workflow"
+            phx-value-workflow="overnight_feature"
+            class="radio radio-sm radio-primary"
+          />
+          <span class="label-text">Overnight Feature</span>
         </label>
       </div>
     </div>

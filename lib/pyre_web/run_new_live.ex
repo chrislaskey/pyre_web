@@ -4,7 +4,7 @@ defmodule PyreWeb.RunNewLive do
   """
   use PyreWeb.Web, :live_view
 
-  @feature_build_stages [
+  @overnight_feature_stages [
     {:planning, "Product Manager"},
     {:designing, "Designer"},
     {:implementing, "Programmer"},
@@ -13,14 +13,15 @@ defmodule PyreWeb.RunNewLive do
     {:shipping, "Shipper"}
   ]
 
-  @iterative_build_stages [
-    {:planning, "Product Manager"},
-    {:designing, "Designer"},
+  @feature_stages [
     {:architecting, "Software Architect"},
-    {:branch_setup, "Branch Setup"},
-    {:engineering, "Software Engineer"},
-    {:reviewing, "PR Reviewer"}
+    {:pr_setup, "PR Setup"},
+    {:engineering, "Software Engineer"}
   ]
+
+  @code_review_stages [{:reviewing, "PR Reviewer"}]
+
+  @chat_stages [{:generalist, "Generalist"}]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -31,10 +32,10 @@ defmodule PyreWeb.RunNewLive do
         form: to_form(%{"feature_description" => "", "feature_name" => ""}, as: :run),
         feature_name: "",
         feature_suggestions: [],
-        workflow: :iterative_build,
-        toggleable_stages: @iterative_build_stages,
+        workflow: :chat,
+        toggleable_stages: @chat_stages,
         skipped_stages: MapSet.new(),
-        interactive_stages: MapSet.new(),
+        interactive_stages: MapSet.new([:generalist]),
         llm_backend: :claude_cli
       )
       |> allow_upload(:attachments,
@@ -70,10 +71,12 @@ defmodule PyreWeb.RunNewLive do
   end
 
   def handle_event("select_workflow", %{"workflow" => workflow_str}, socket) do
-    {workflow, stages} =
+    {workflow, stages, interactive} =
       case workflow_str do
-        "iterative_build" -> {:iterative_build, @iterative_build_stages}
-        _ -> {:feature_build, @feature_build_stages}
+        "chat" -> {:chat, @chat_stages, MapSet.new([:generalist])}
+        "feature" -> {:feature, @feature_stages, MapSet.new()}
+        "code_review" -> {:code_review, @code_review_stages, MapSet.new()}
+        "overnight_feature" -> {:overnight_feature, @overnight_feature_stages, MapSet.new()}
       end
 
     socket =
@@ -81,7 +84,7 @@ defmodule PyreWeb.RunNewLive do
         workflow: workflow,
         toggleable_stages: stages,
         skipped_stages: MapSet.new(),
-        interactive_stages: MapSet.new()
+        interactive_stages: interactive
       )
 
     {:noreply, socket}

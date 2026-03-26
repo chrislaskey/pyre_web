@@ -16,7 +16,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
-        workflow: :feature_build,
+        workflow: :overnight_feature,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -47,7 +47,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
-        workflow: :feature_build,
+        workflow: :overnight_feature,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -86,7 +86,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a products listing page",
-        workflow: :feature_build,
+        workflow: :overnight_feature,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -109,7 +109,7 @@ defmodule PyreWeb.RunShowLiveTest do
 
     {:ok, id} =
       Pyre.RunServer.start_run("Test",
-        workflow: :feature_build,
+        workflow: :overnight_feature,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -123,24 +123,21 @@ defmodule PyreWeb.RunShowLiveTest do
     File.rm_rf!(tmp_dir)
   end
 
-  test "renders iterative build phases for iterative workflow", %{conn: conn} do
+  test "renders feature phases for feature workflow", %{conn: conn} do
     AgentMock.setup([
-      "Requirements.",
-      "Design.",
       "Architecture plan.",
       "## Branch Name\n\nfeature/change\n\n## PR Title\n\nChange\n\n## PR Body\n\nChange.",
-      "Implementation done.",
-      "APPROVE\n\nGood."
+      "Implementation done."
     ])
 
     tmp_dir =
-      Path.join(System.tmp_dir!(), "pyre_show_ib_test_#{System.unique_integer([:positive])}")
+      Path.join(System.tmp_dir!(), "pyre_show_feat_test_#{System.unique_integer([:positive])}")
 
     File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("Build a test page",
-        workflow: :iterative_build,
+        workflow: :feature,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir
@@ -149,12 +146,38 @@ defmodule PyreWeb.RunShowLiveTest do
     wait_for_status(id, :complete)
 
     {:ok, _view, html} = live(conn, "/pyre/runs/#{id}")
-    # Iterative build phases are present in the workflow panel
+    # Feature phases are present in the workflow panel
     assert html =~ "Architecture"
-    assert html =~ "Branch Setup"
+    assert html =~ "PR Setup"
     assert html =~ "Engineering"
-    # Feature build phases should NOT appear in the workflow panel
-    # (Note: "Implementation" may appear in output stream, so check the panel specifically)
+    # Overnight run phases should NOT appear
+    refute html =~ "Shipping"
+
+    File.rm_rf!(tmp_dir)
+  end
+
+  test "renders chat workflow phase display", %{conn: conn} do
+    AgentMock.setup(["Generalist output."])
+
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "pyre_show_chat_test_#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
+
+    {:ok, id} =
+      Pyre.RunServer.start_run("Help me debug this",
+        workflow: :chat,
+        llm: AgentMock,
+        streaming: false,
+        project_dir: tmp_dir,
+        interactive_stages: []
+      )
+
+    wait_for_status(id, :complete)
+
+    {:ok, _view, html} = live(conn, "/pyre/runs/#{id}")
+    assert html =~ "Generalist"
+    refute html =~ "Architecture"
     refute html =~ "Shipping"
 
     File.rm_rf!(tmp_dir)
