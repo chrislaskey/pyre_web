@@ -33,7 +33,7 @@ defmodule PyreWeb.Components.Layouts do
       <div class="flex flex-1">
         <.sidebar current_page={@current_page} prefix={@prefix} />
         <div class="flex-1 p-8 overflow-y-auto">
-          <.breadcrumbs :if={@breadcrumbs != []} items={@breadcrumbs} prefix={@prefix} />
+          <.breadcrumbs items={@breadcrumbs} prefix={@prefix} />
           {render_slot(@inner_block)}
         </div>
       </div>
