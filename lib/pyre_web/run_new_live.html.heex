@@ -133,6 +133,30 @@
           <input
             type="radio"
             name="workflow"
+            value="prototype"
+            checked={@workflow == :prototype}
+            phx-click="select_workflow"
+            phx-value-workflow="prototype"
+            class="radio radio-sm radio-primary"
+          />
+          <span class="label-text">Prototype</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            type="radio"
+            name="workflow"
+            value="task"
+            checked={@workflow == :task}
+            phx-click="select_workflow"
+            phx-value-workflow="task"
+            class="radio radio-sm radio-primary"
+          />
+          <span class="label-text">Task</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            type="radio"
+            name="workflow"
             value="code_review"
             checked={@workflow == :code_review}
             phx-click="select_workflow"

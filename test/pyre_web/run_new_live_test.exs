@@ -96,4 +96,30 @@ defmodule PyreWeb.RunNewLiveTest do
     refute html =~ "Software Architect"
     refute html =~ "Generalist"
   end
+
+  test "switching to prototype workflow shows prototype engineer stage", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/pyre/runs/new")
+
+    html = render_click(view, "select_workflow", %{"workflow" => "prototype"})
+
+    assert html =~ "Prototype Engineer"
+    refute html =~ "Software Architect"
+    refute html =~ "Generalist"
+  end
+
+  test "switching to task workflow shows generalist stage", %{conn: conn} do
+    {:ok, view, _html} = live(conn, "/pyre/runs/new")
+
+    html = render_click(view, "select_workflow", %{"workflow" => "task"})
+
+    assert html =~ "Generalist"
+    refute html =~ "Software Architect"
+    refute html =~ "Prototype Engineer"
+  end
+
+  test "renders prototype and task in workflow selector", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/pyre/runs/new")
+    assert html =~ "Prototype"
+    assert html =~ "Task"
+  end
 end

@@ -183,6 +183,59 @@ defmodule PyreWeb.RunShowLiveTest do
     File.rm_rf!(tmp_dir)
   end
 
+  test "renders prototype workflow phase display", %{conn: conn} do
+    AgentMock.setup(["Prototype output."])
+
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "pyre_show_proto_test_#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
+
+    {:ok, id} =
+      Pyre.RunServer.start_run("Build a prototype",
+        workflow: :prototype,
+        llm: AgentMock,
+        streaming: false,
+        project_dir: tmp_dir,
+        interactive_stages: []
+      )
+
+    wait_for_status(id, :complete)
+
+    {:ok, _view, html} = live(conn, "/pyre/runs/#{id}")
+    assert html =~ "Prototyping"
+    refute html =~ "Architecture"
+    refute html =~ "Generalist"
+
+    File.rm_rf!(tmp_dir)
+  end
+
+  test "renders task workflow phase display", %{conn: conn} do
+    AgentMock.setup(["Task output."])
+
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "pyre_show_task_test_#{System.unique_integer([:positive])}")
+
+    File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
+
+    {:ok, id} =
+      Pyre.RunServer.start_run("Run a task",
+        workflow: :task,
+        llm: AgentMock,
+        streaming: false,
+        project_dir: tmp_dir
+      )
+
+    wait_for_status(id, :complete)
+
+    {:ok, _view, html} = live(conn, "/pyre/runs/#{id}")
+    assert html =~ "Task"
+    refute html =~ "Architecture"
+    refute html =~ "Shipping"
+
+    File.rm_rf!(tmp_dir)
+  end
+
   defp wait_for_status(id, expected_status, timeout \\ 15_000) do
     deadline = System.monotonic_time(:millisecond) + timeout
 

@@ -27,6 +27,12 @@ defmodule PyreWeb.RunShowLive do
 
   @feature_order [:architecting, :pr_setup, :engineering]
 
+  @prototype_phases [{:prototyping, "Prototyping"}]
+  @prototype_order [:prototyping]
+
+  @task_phases [{:tasking, "Task"}]
+  @task_order [:tasking]
+
   @code_review_phases [{:reviewing, "Review"}]
   @code_review_order [:reviewing]
 
@@ -49,6 +55,8 @@ defmodule PyreWeb.RunShowLive do
           case workflow do
             :chat -> {@chat_phases, @chat_order}
             :feature -> {@feature_phases, @feature_order}
+            :prototype -> {@prototype_phases, @prototype_order}
+            :task -> {@task_phases, @task_order}
             :code_review -> {@code_review_phases, @code_review_order}
             :overnight_feature -> {@overnight_feature_phases, @overnight_feature_order}
           end
@@ -365,6 +373,8 @@ defmodule PyreWeb.RunShowLive do
   defp phase_label(:architecting), do: "Architecture"
   defp phase_label(:pr_setup), do: "PR Setup"
   defp phase_label(:engineering), do: "Engineering"
+  defp phase_label(:prototyping), do: "Prototyping"
+  defp phase_label(:tasking), do: "Task"
   defp phase_label(other), do: to_string(other)
 
   defp status_badge_class(:running), do: "badge-warning"

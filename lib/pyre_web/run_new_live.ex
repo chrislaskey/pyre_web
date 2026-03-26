@@ -19,6 +19,10 @@ defmodule PyreWeb.RunNewLive do
     {:engineering, "Software Engineer"}
   ]
 
+  @prototype_stages [{:prototyping, "Prototype Engineer"}]
+
+  @task_stages [{:tasking, "Generalist"}]
+
   @code_review_stages [{:reviewing, "PR Reviewer"}]
 
   @chat_stages [{:generalist, "Generalist"}]
@@ -75,6 +79,8 @@ defmodule PyreWeb.RunNewLive do
       case workflow_str do
         "chat" -> {:chat, @chat_stages, MapSet.new([:generalist])}
         "feature" -> {:feature, @feature_stages, MapSet.new()}
+        "prototype" -> {:prototype, @prototype_stages, MapSet.new([:prototyping])}
+        "task" -> {:task, @task_stages, MapSet.new()}
         "code_review" -> {:code_review, @code_review_stages, MapSet.new()}
         "overnight_feature" -> {:overnight_feature, @overnight_feature_stages, MapSet.new()}
       end
