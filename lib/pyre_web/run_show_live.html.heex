@@ -1,4 +1,12 @@
-<.page_layout current_page={:run_show} prefix={pyre_path(@socket, "")}>
+<.page_layout
+  current_page={:run_show}
+  prefix={pyre_path(@socket, "")}
+  breadcrumbs={[
+    %{label: "Home", path: pyre_path(@socket, "")},
+    %{label: "Runs", path: pyre_path(@socket, "/runs")},
+    %{label: @run_id}
+  ]}
+>
   <div class="mb-6 flex items-center gap-4">
     <h1 class="text-xl font-bold">Run {@run_id}</h1>
     <span class={"badge badge-sm #{status_badge_class(@status)}"}>

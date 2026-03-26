@@ -1,4 +1,12 @@
-<.page_layout current_page={:new_run} prefix={pyre_path(@socket, "")}>
+<.page_layout
+  current_page={:new_run}
+  prefix={pyre_path(@socket, "")}
+  breadcrumbs={[
+    %{label: "Home", path: pyre_path(@socket, "")},
+    %{label: "Runs", path: pyre_path(@socket, "/runs")},
+    %{label: "New Run"}
+  ]}
+>
   <div class="mb-6">
     <h1 class="text-xl font-bold">New Run</h1>
   </div>

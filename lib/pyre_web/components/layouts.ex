@@ -23,6 +23,7 @@ defmodule PyreWeb.Components.Layouts do
 
   attr :current_page, :atom, required: true
   attr :prefix, :string, required: true
+  attr :breadcrumbs, :list, default: []
   slot :inner_block, required: true
 
   def page_layout(assigns) do
@@ -32,9 +33,29 @@ defmodule PyreWeb.Components.Layouts do
       <div class="flex flex-1">
         <.sidebar current_page={@current_page} prefix={@prefix} />
         <div class="flex-1 p-8 overflow-y-auto">
+          <.breadcrumbs :if={@breadcrumbs != []} items={@breadcrumbs} />
           {render_slot(@inner_block)}
         </div>
       </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders DaisyUI breadcrumbs. Each item is a map with `:label` and an optional `:path`.
+  Items with a `:path` render as navigate links; the last item (no path) renders as plain text.
+  """
+  attr :items, :list, required: true
+
+  def breadcrumbs(assigns) do
+    ~H"""
+    <div class="breadcrumbs text-sm mb-4">
+      <ul>
+        <li :for={item <- @items}>
+          <.link :if={item[:path]} navigate={item.path}>{item.label}</.link>
+          <span :if={!item[:path]}>{item.label}</span>
+        </li>
+      </ul>
     </div>
     """
   end
