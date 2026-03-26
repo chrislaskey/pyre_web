@@ -34,6 +34,7 @@ defmodule PyreWeb.RunNewLive do
         workflow: :iterative_build,
         toggleable_stages: @iterative_build_stages,
         skipped_stages: MapSet.new(),
+        interactive_stages: MapSet.new(),
         llm_backend: :claude_cli
       )
       |> allow_upload(:attachments,
@@ -79,7 +80,8 @@ defmodule PyreWeb.RunNewLive do
       assign(socket,
         workflow: workflow,
         toggleable_stages: stages,
-        skipped_stages: MapSet.new()
+        skipped_stages: MapSet.new(),
+        interactive_stages: MapSet.new()
       )
 
     {:noreply, socket}
@@ -96,6 +98,19 @@ defmodule PyreWeb.RunNewLive do
       end
 
     {:noreply, assign(socket, skipped_stages: skipped)}
+  end
+
+  def handle_event("toggle_interactive_stage", %{"stage" => stage_str}, socket) do
+    stage = String.to_existing_atom(stage_str)
+
+    interactive =
+      if MapSet.member?(socket.assigns.interactive_stages, stage) do
+        MapSet.delete(socket.assigns.interactive_stages, stage)
+      else
+        MapSet.put(socket.assigns.interactive_stages, stage)
+      end
+
+    {:noreply, assign(socket, interactive_stages: interactive)}
   end
 
   def handle_event("select_backend", %{"backend" => backend}, socket) do
@@ -135,6 +150,7 @@ defmodule PyreWeb.RunNewLive do
         end)
 
       skipped = MapSet.to_list(socket.assigns.skipped_stages)
+      interactive = MapSet.to_list(socket.assigns.interactive_stages)
 
       llm_module = llm_module_for(socket.assigns.llm_backend)
 
@@ -145,6 +161,7 @@ defmodule PyreWeb.RunNewLive do
              [
                workflow: socket.assigns.workflow,
                skipped_stages: skipped,
+               interactive_stages: interactive,
                attachments: attachments,
                llm: llm_module,
                feature: feature
@@ -335,22 +352,32 @@ defmodule PyreWeb.RunNewLive do
             <span class="label-text font-medium">Workflow Stages</span>
           </label>
           <p class="text-sm text-base-content/50 mb-2">
-            Uncheck stages to skip them. Skipped stages use general best practices as fallback.
+            Uncheck stages to skip them. Enable interactive to pause after each stage for feedback.
           </p>
           <div class="flex flex-col gap-2">
-            <label
+            <div
               :for={{stage_key, label} <- @toggleable_stages}
-              class="label cursor-pointer justify-start gap-2"
+              class="flex items-center gap-3"
             >
               <input
                 type="checkbox"
                 checked={stage_key not in @skipped_stages}
                 phx-click="toggle_stage"
                 phx-value-stage={stage_key}
-                class="checkbox checkbox-sm"
+                class="toggle toggle-sm toggle-primary"
               />
-              <span class="label-text">{label}</span>
-            </label>
+              <span class="text-sm flex-1">{label}</span>
+              <label class="flex items-center gap-1 cursor-pointer">
+                <span class="text-xs text-base-content/40">interactive</span>
+                <input
+                  type="checkbox"
+                  checked={stage_key in @interactive_stages}
+                  phx-click="toggle_interactive_stage"
+                  phx-value-stage={stage_key}
+                  class="toggle toggle-xs toggle-accent"
+                />
+              </label>
+            </div>
           </div>
         </div>
 
