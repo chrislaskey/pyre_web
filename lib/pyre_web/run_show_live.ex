@@ -307,9 +307,9 @@ defmodule PyreWeb.RunShowLive do
         <% else %>
           <input
             type="checkbox"
-            class="toggle toggle-xs"
+            class="toggle toggle-xs toggle-accent pointer-events-none"
             checked={@phase_key in @interactive}
-            disabled
+            tabindex="-1"
           />
         <% end %>
       </label>
@@ -454,5 +454,6 @@ defmodule PyreWeb.RunShowLive do
 
   defp item_class(:log), do: "block mt-1 text-info"
   defp item_class(:error), do: "block mt-1 text-error"
+  defp item_class(:user_reply), do: "block mt-1 text-accent"
   defp item_class(_), do: ""
 end

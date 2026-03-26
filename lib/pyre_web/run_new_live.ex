@@ -374,7 +374,7 @@ defmodule PyreWeb.RunNewLive do
                   checked={stage_key in @interactive_stages}
                   phx-click="toggle_interactive_stage"
                   phx-value-stage={stage_key}
-                  class="toggle toggle-xs toggle-accent"
+                  class="toggle toggle-sm toggle-accent"
                 />
               </label>
             </div>
