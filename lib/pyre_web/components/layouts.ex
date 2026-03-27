@@ -89,7 +89,7 @@ defmodule PyreWeb.Components.Layouts do
 
   def page_header(assigns) do
     ~H"""
-    <div class="w-full h-16 pl-8 pr-6 items-center flex justify-between shadow-sm relative z-10">
+    <div class="w-full h-16 px-6 items-center flex justify-between shadow-sm relative z-10">
       <div class="flex items-center gap-x-2">
         <.link
           patch={toggle_menu_path(@uri)}
@@ -116,17 +116,6 @@ defmodule PyreWeb.Components.Layouts do
         </.link>
       </div>
       <div class="flex items-center gap-x-1">
-        <.link navigate={"#{@prefix}/runs/new"} class="btn hover:btn-accent btn-ghost">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            class="size-5"
-          >
-            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-          </svg>
-          <span>New run</span>
-        </.link>
         <.theme_selector />
         <.link
           patch={toggle_sidebar_path(@uri)}
@@ -182,7 +171,7 @@ defmodule PyreWeb.Components.Layouts do
     ~H"""
     <nav
       :if={!sidebar_collapsed?(@uri)}
-      class="hidden md:block w-56 shrink-0 bg-base-200 border-r border-base-300 py-6 px-3"
+      class="hidden md:block w-56 shrink-0 bg-base-200 border-r border-base-300 py-5 px-3"
       style="min-height: calc(100vh - 4rem);"
     >
       <div class="w-full">
@@ -199,7 +188,7 @@ defmodule PyreWeb.Components.Layouts do
   def mobile_menu(assigns) do
     ~H"""
     <div :if={menu_open?(@uri)} class="fixed inset-0 z-50 bg-base-100 flex flex-col md:hidden">
-      <div class="flex items-center gap-x-2 h-16 pl-8 pr-6 shadow-sm">
+      <div class="flex items-center gap-x-2 h-16 px-6 shadow-sm">
         <.link
           patch={toggle_menu_path(@uri)}
           class="btn btn-ghost btn-sm btn-square"
@@ -232,7 +221,15 @@ defmodule PyreWeb.Components.Layouts do
 
   def nav_links(assigns) do
     ~H"""
-    <ul class="menu w-full">
+    <ul class="menu w-full gap-y-1">
+      <li>
+        <.link navigate={"#{@prefix}/runs/new"} class={["!justify-start mb-1 btn btn-sm btn-secondary h-9", @current_page == :new_run && "active"]}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+            <path fill-rule="evenodd" d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5ZM18 1.5a.75.75 0 0 1 .728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 0 1 0 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 0 1-1.456 0l-.258-1.036a2.625 2.625 0 0 0-1.91-1.91l-1.036-.258a.75.75 0 0 1 0-1.456l1.036-.258a2.625 2.625 0 0 0 1.91-1.91l.258-1.036A.75.75 0 0 1 18 1.5ZM16.5 15a.75.75 0 0 1 .712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 0 1 0 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 0 1-1.422 0l-.395-1.183a1.5 1.5 0 0 0-.948-.948l-1.183-.395a.75.75 0 0 1 0-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0 1 16.5 15Z" clip-rule="evenodd" />
+          </svg>
+          New Run
+        </.link>
+      </li>
       <li>
         <.link navigate={@prefix} class={@current_page == :home && "active"}>
           <svg
@@ -287,19 +284,6 @@ defmodule PyreWeb.Components.Layouts do
             />
           </svg>
           Runs
-        </.link>
-      </li>
-      <li>
-        <.link navigate={"#{@prefix}/runs/new"} class={@current_page == :new_run && "active"}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            class="size-4"
-          >
-            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-          </svg>
-          New Run
         </.link>
       </li>
     </ul>

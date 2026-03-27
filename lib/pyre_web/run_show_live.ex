@@ -238,7 +238,7 @@ defmodule PyreWeb.RunShowLive do
         <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
           <input
             type="checkbox"
-            class="toggle toggle-xs toggle-accent"
+            class="toggle toggle-xs toggle-secondary"
             checked={@phase_key in @interactive}
             phx-click="toggle_interactive_stage"
             phx-value-stage={@phase_key}
@@ -246,7 +246,7 @@ defmodule PyreWeb.RunShowLive do
         <% else %>
           <input
             type="checkbox"
-            class="toggle toggle-xs toggle-accent pointer-events-none"
+            class="toggle toggle-xs toggle-secondary pointer-events-none"
             checked={@phase_key in @interactive}
             tabindex="-1"
           />
@@ -258,9 +258,9 @@ defmodule PyreWeb.RunShowLive do
 
   defp reply_panel(assigns) do
     ~H"""
-    <div class="mt-4 border border-accent/40 rounded-lg overflow-hidden">
-      <div class="bg-accent/10 px-4 py-2 border-b border-accent/30">
-        <span class="text-sm font-medium text-accent">
+    <div class="mt-4 border border-secondary/40 rounded-lg overflow-hidden">
+      <div class="bg-secondary/10 px-4 py-2 border-b border-accent/30">
+        <span class="text-sm font-medium text-secondary">
           Waiting for your input — {phase_label(@waiting_phase)}
         </span>
       </div>
@@ -276,7 +276,7 @@ defmodule PyreWeb.RunShowLive do
               autofocus
             ></textarea>
             <div class="flex justify-between items-center">
-              <button type="submit" class="btn btn-accent btn-sm" disabled={@reply_text == ""}>
+              <button type="submit" class="btn btn-secondary btn-sm" disabled={@reply_text == ""}>
                 Send Reply
               </button>
               <button
@@ -325,7 +325,7 @@ defmodule PyreWeb.RunShowLive do
 
   defp stage_badge(%{status: :active, waiting: true} = assigns) do
     ~H"""
-    <span class="badge badge-xs badge-accent">waiting</span>
+    <span class="badge badge-xs badge-secondary">waiting</span>
     """
   end
 
@@ -396,6 +396,6 @@ defmodule PyreWeb.RunShowLive do
 
   defp item_class(:log), do: "block mt-1 text-info"
   defp item_class(:error), do: "block mt-1 text-error"
-  defp item_class(:user_reply), do: "block mt-1 text-accent"
+  defp item_class(:user_reply), do: "block mt-1 text-secondary"
   defp item_class(_), do: ""
 end
