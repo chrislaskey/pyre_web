@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content={Phoenix.Controller.get_csrf_token()} />
     <title>{assigns[:page_title] || "Pyre"}</title>
-
-    <!-- DaisyUI + Tailwind from CDN -->
+    
+<!-- DaisyUI + Tailwind from CDN -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
     <link
       href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css"
@@ -17,8 +17,8 @@
     </script>
     <script defer src={asset_path(@conn, :js)}>
     </script>
-
-    <!-- Theme persistence -->
+    
+<!-- Theme persistence -->
     <script>
       (() => {
         const saved = localStorage.getItem("phx:theme");

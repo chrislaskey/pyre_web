@@ -30,7 +30,8 @@ defmodule PyreWeb.Components.Layouts do
   def page_layout(assigns) do
     ~H"""
     <div class="flex flex-col min-h-screen">
-      <.page_header prefix={@prefix} uri={@uri} />
+      <.page_header current_page={@current_page} prefix={@prefix} uri={@uri} />
+      <.mobile_menu current_page={@current_page} prefix={@prefix} uri={@uri} />
       <div class="flex flex-1">
         <.sidebar current_page={@current_page} prefix={@prefix} uri={@uri} />
         <div class="flex-1 p-8 overflow-y-auto">
@@ -82,6 +83,7 @@ defmodule PyreWeb.Components.Layouts do
     """
   end
 
+  attr :current_page, :atom, required: true
   attr :prefix, :string, required: true
   attr :uri, :string, default: ""
 
@@ -89,6 +91,26 @@ defmodule PyreWeb.Components.Layouts do
     ~H"""
     <div class="w-full h-16 pl-8 pr-6 items-center flex justify-between shadow-sm relative z-10">
       <div class="flex items-center gap-x-2">
+        <.link
+          patch={toggle_menu_path(@uri)}
+          class="btn btn-ghost btn-sm btn-square flex md:hidden"
+          aria-label="Open menu"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+            />
+          </svg>
+        </.link>
         <.link class="w-48 tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
           Pyre
         </.link>
@@ -106,13 +128,45 @@ defmodule PyreWeb.Components.Layouts do
           <span>New run</span>
         </.link>
         <.theme_selector />
-        <.link patch={toggle_sidebar_path(@uri)} class="btn btn-ghost btn-sm btn-square hidden sm:flex" aria-label="Toggle sidebar">
+        <.link
+          patch={toggle_sidebar_path(@uri)}
+          class="btn btn-ghost btn-sm btn-square hidden sm:flex"
+          aria-label="Toggle sidebar"
+        >
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="size-5">
-            <rect x="2.74709" y="4.77295" width="18.5" height="14.5" rx="1.25" stroke="currentColor" stroke-width="1.5" />
-            <path d="M8.49709 5.02295V19.0229" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
-            <path d="M4.99709 8.52295L5.99709 8.52295" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-            <path d="M4.99709 10.5229L5.99709 10.5229" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-            <path d="M4.99709 12.5229L5.99709 12.5229" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <rect
+              x="2.74709"
+              y="4.77295"
+              width="18.5"
+              height="14.5"
+              rx="1.25"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="M8.49709 5.02295V19.0229"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="square"
+            />
+            <path
+              d="M4.99709 8.52295L5.99709 8.52295"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+            <path
+              d="M4.99709 10.5229L5.99709 10.5229"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+            <path
+              d="M4.99709 12.5229L5.99709 12.5229"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
           </svg>
         </.link>
       </div>
@@ -126,11 +180,50 @@ defmodule PyreWeb.Components.Layouts do
 
   def sidebar(assigns) do
     ~H"""
-    <nav :if={!sidebar_collapsed?(@uri)} class="w-56 shrink-0 bg-base-200 border-r border-base-300 py-6 px-3" style="min-height: calc(100vh - 4rem);">
+    <nav
+      :if={!sidebar_collapsed?(@uri)}
+      class="hidden md:block w-56 shrink-0 bg-base-200 border-r border-base-300 py-6 px-3"
+      style="min-height: calc(100vh - 4rem);"
+    >
       <div class="w-full">
         <.nav_links current_page={@current_page} prefix={@prefix} />
       </div>
     </nav>
+    """
+  end
+
+  attr :current_page, :atom, required: true
+  attr :prefix, :string, required: true
+  attr :uri, :string, required: true
+
+  def mobile_menu(assigns) do
+    ~H"""
+    <div :if={menu_open?(@uri)} class="fixed inset-0 z-50 bg-base-100 flex flex-col md:hidden">
+      <div class="flex items-center gap-x-2 h-16 pl-8 pr-6 shadow-sm">
+        <.link
+          patch={toggle_menu_path(@uri)}
+          class="btn btn-ghost btn-sm btn-square"
+          aria-label="Close menu"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-5"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </.link>
+        <.link class="tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
+          Pyre
+        </.link>
+      </div>
+      <div class="flex-1 overflow-y-auto py-6 px-3 bg-base-200 flex-1 border-t border-base-300">
+        <.nav_links current_page={@current_page} prefix={@prefix} />
+      </div>
+    </div>
     """
   end
 
@@ -291,6 +384,32 @@ defmodule PyreWeb.Components.Layouts do
 
     new_nav = if params["sidebar"] == "collapsed", do: "open", else: "collapsed"
     new_params = Map.put(params, "sidebar", new_nav)
+    new_query = URI.encode_query(new_params)
+
+    %URI{parsed | query: new_query} |> URI.to_string()
+  end
+
+  defp menu_open?(uri) when uri in ["", nil], do: false
+
+  defp menu_open?(uri) do
+    uri
+    |> URI.parse()
+    |> Map.get(:query)
+    |> case do
+      nil -> %{}
+      q -> URI.decode_query(q)
+    end
+    |> Map.get("menu") == "open"
+  end
+
+  defp toggle_menu_path(uri) when uri in ["", nil], do: "?menu=open"
+
+  defp toggle_menu_path(uri) do
+    parsed = URI.parse(uri)
+    params = URI.decode_query(parsed.query || "")
+
+    new_menu = if params["menu"] == "open", do: "hidden", else: "open"
+    new_params = Map.put(params, "menu", new_menu)
     new_query = URI.encode_query(new_params)
 
     %URI{parsed | query: new_query} |> URI.to_string()

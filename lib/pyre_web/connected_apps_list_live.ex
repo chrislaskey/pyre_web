@@ -28,7 +28,11 @@ defmodule PyreWeb.ConnectedAppsListLive do
   end
 
   @impl true
-  def handle_event("action_execute_commands_clone_repo", %{"connection-id" => connection_id}, socket) do
+  def handle_event(
+        "action_execute_commands_clone_repo",
+        %{"connection-id" => connection_id},
+        socket
+      ) do
     execution_id = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     pubsub = pubsub()
 

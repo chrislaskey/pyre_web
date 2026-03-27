@@ -19,7 +19,8 @@ defmodule PyreWeb.ConnectionPresenceComponent do
 
             <div class="text-xs text-base-content/60 space-y-0.5 mt-1">
               <p :if={presence[:cpu_brand] || presence[:cpu_cores]}>
-                {presence[:cpu_brand] || "CPU"}{if presence[:cpu_cores], do: " (#{presence[:cpu_cores]} cores)"}
+                {presence[:cpu_brand] || "CPU"}{if presence[:cpu_cores],
+                  do: " (#{presence[:cpu_cores]} cores)"}
               </p>
               <p :if={presence[:memory_gb]}>
                 {presence[:memory_gb]} GB memory

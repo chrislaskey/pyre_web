@@ -22,7 +22,8 @@ defmodule PyreWeb.Channel do
   def join("pyre:connections", params, socket) do
     send(self(), :after_join)
 
-    connection_id = socket.assigns[:connection_id] || params["connection_id"] || socket.id || "anonymous"
+    connection_id =
+      socket.assigns[:connection_id] || params["connection_id"] || socket.id || "anonymous"
 
     metadata = %{
       name: params["name"] || "Unknown",
