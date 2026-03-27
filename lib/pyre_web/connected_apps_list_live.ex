@@ -23,6 +23,11 @@ defmodule PyreWeb.ConnectedAppsListLive do
   end
 
   @impl true
+  def handle_params(_params, uri, socket) do
+    {:noreply, assign(socket, :uri, uri)}
+  end
+
+  @impl true
   def handle_event("action_execute_commands_clone_repo", %{"connection-id" => connection_id}, socket) do
     execution_id = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     pubsub = pubsub()
@@ -77,13 +82,6 @@ defmodule PyreWeb.ConnectedAppsListLive do
     exit_codes = payload["exit_codes"] || []
     status = if Enum.all?(exit_codes, &(&1 == 0)), do: :complete, else: :error
     {:noreply, assign(socket, execution: %{execution | status: status})}
-  end
-
-  defp pyre_version do
-    case Application.spec(:pyre, :vsn) do
-      nil -> "unknown"
-      vsn -> to_string(vsn)
-    end
   end
 
   defp pubsub do

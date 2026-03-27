@@ -24,6 +24,11 @@ defmodule PyreWeb.RunListLive do
   end
 
   @impl true
+  def handle_params(_params, uri, socket) do
+    {:noreply, assign(socket, :uri, uri)}
+  end
+
+  @impl true
   def handle_info({:pyre_run_status, _id, _status}, socket) do
     runs = apply(Pyre.RunServer, :list_runs, [])
     {:noreply, assign(socket, runs: runs)}

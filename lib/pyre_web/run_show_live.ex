@@ -90,6 +90,11 @@ defmodule PyreWeb.RunShowLive do
   end
 
   @impl true
+  def handle_params(_params, uri, socket) do
+    {:noreply, assign(socket, :uri, uri)}
+  end
+
+  @impl true
   def handle_event("toggle_stage", %{"stage" => stage_str}, socket) do
     stage = String.to_existing_atom(stage_str)
 

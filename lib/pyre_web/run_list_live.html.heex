@@ -1,10 +1,11 @@
 <.page_layout
   current_page={:runs}
   prefix={pyre_path(@socket, "")}
+  uri={@uri}
   breadcrumbs={[%{label: "Runs"}]}
 >
   <div class="mb-6 flex items-center gap-4">
-    <h1 class="text-xl font-bold">Runs</h1>
+    <.h1>Runs</.h1>
     <.link navigate={pyre_path(@socket, "/runs/new")} class="btn btn-primary btn-sm ml-auto">
       New Run
     </.link>

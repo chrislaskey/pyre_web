@@ -23,15 +23,16 @@ defmodule PyreWeb.Components.Layouts do
 
   attr :current_page, :atom, required: true
   attr :prefix, :string, required: true
+  attr :uri, :string, default: ""
   attr :breadcrumbs, :list, default: []
   slot :inner_block, required: true
 
   def page_layout(assigns) do
     ~H"""
     <div class="flex flex-col min-h-screen">
-      <.header prefix={@prefix} />
+      <.page_header prefix={@prefix} uri={@uri} />
       <div class="flex flex-1">
-        <.sidebar current_page={@current_page} prefix={@prefix} />
+        <.sidebar current_page={@current_page} prefix={@prefix} uri={@uri} />
         <div class="flex-1 p-8 overflow-y-auto">
           <.breadcrumbs items={@breadcrumbs} prefix={@prefix} />
           {render_slot(@inner_block)}
@@ -82,12 +83,13 @@ defmodule PyreWeb.Components.Layouts do
   end
 
   attr :prefix, :string, required: true
+  attr :uri, :string, default: ""
 
-  def header(assigns) do
+  def page_header(assigns) do
     ~H"""
     <div class="w-full h-16 pl-8 pr-6 items-center flex justify-between shadow-sm relative z-10">
-      <div class="flex items-center">
-        <.link class="tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
+      <div class="flex items-center gap-x-2">
+        <.link class="w-48 tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
           Pyre
         </.link>
       </div>
@@ -104,6 +106,15 @@ defmodule PyreWeb.Components.Layouts do
           <span>New run</span>
         </.link>
         <.theme_selector />
+        <.link patch={toggle_sidebar_path(@uri)} class="btn btn-ghost btn-sm btn-square hidden sm:flex" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="size-5">
+            <rect x="2.74709" y="4.77295" width="18.5" height="14.5" rx="1.25" stroke="currentColor" stroke-width="1.5" />
+            <path d="M8.49709 5.02295V19.0229" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" />
+            <path d="M4.99709 8.52295L5.99709 8.52295" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M4.99709 10.5229L5.99709 10.5229" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <path d="M4.99709 12.5229L5.99709 12.5229" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </.link>
       </div>
     </div>
     """
@@ -111,84 +122,94 @@ defmodule PyreWeb.Components.Layouts do
 
   attr :current_page, :atom, required: true
   attr :prefix, :string, required: true
+  attr :uri, :string, required: true
 
   def sidebar(assigns) do
     ~H"""
-    <nav class="w-64 shrink-0 bg-base-200 py-6 px-3" style="min-height: calc(100vh - 4rem);">
+    <nav :if={!sidebar_collapsed?(@uri)} class="w-56 shrink-0 bg-base-200 border-r border-base-300 py-6 px-3" style="min-height: calc(100vh - 4rem);">
       <div class="w-full">
-        <ul class="menu w-full">
-          <li>
-            <.link navigate={@prefix} class={@current_page == :home && "active"}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                class="size-4"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-                />
-              </svg>
-              Home
-            </.link>
-          </li>
-          <li>
-            <.link
-              navigate={"#{@prefix}/connected-apps"}
-              class={@current_page in [:connected_apps] && "active"}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                class="size-4"
-              >
-                <path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
-                <path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 0 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
-              </svg>
-              Connected Apps
-            </.link>
-          </li>
-          <li>
-            <.link
-              navigate={"#{@prefix}/runs"}
-              class={@current_page in [:runs, :run_show] && "active"}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                class="size-4"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M6 4.75A.75.75 0 0 1 6.75 4h10.5a.75.75 0 0 1 0 1.5H6.75A.75.75 0 0 1 6 4.75ZM6 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H6.75A.75.75 0 0 1 6 10Zm0 5.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H6.75a.75.75 0 0 1-.75-.75ZM1.99 4.75a1 1 0 0 1 1-1H3a1 1 0 0 1 1 1v.01a1 1 0 0 1-1 1h-.01a1 1 0 0 1-1-1v-.01ZM1.99 15.25a1 1 0 0 1 1-1H3a1 1 0 0 1 1 1v.01a1 1 0 0 1-1 1h-.01a1 1 0 0 1-1-1v-.01ZM1.99 10a1 1 0 0 1 1-1H3a1 1 0 0 1 1 1v.01a1 1 0 0 1-1 1h-.01a1 1 0 0 1-1-1V10Z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              Runs
-            </.link>
-          </li>
-          <li>
-            <.link navigate={"#{@prefix}/runs/new"} class={@current_page == :new_run && "active"}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                class="size-4"
-              >
-                <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-              </svg>
-              New Run
-            </.link>
-          </li>
-        </ul>
+        <.nav_links current_page={@current_page} prefix={@prefix} />
       </div>
     </nav>
+    """
+  end
+
+  attr :current_page, :atom, required: true
+  attr :prefix, :string, required: true
+
+  def nav_links(assigns) do
+    ~H"""
+    <ul class="menu w-full">
+      <li>
+        <.link navigate={@prefix} class={@current_page == :home && "active"}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-4"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+            />
+          </svg>
+          Home
+        </.link>
+      </li>
+      <li>
+        <.link
+          navigate={"#{@prefix}/connected-apps"}
+          class={@current_page in [:connected_apps] && "active"}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="size-4"
+          >
+            <path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
+            <path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 0 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+          </svg>
+          Connected Apps
+        </.link>
+      </li>
+      <li>
+        <.link
+          navigate={"#{@prefix}/runs"}
+          class={@current_page in [:runs, :run_show] && "active"}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="size-4"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M6 4.75A.75.75 0 0 1 6.75 4h10.5a.75.75 0 0 1 0 1.5H6.75A.75.75 0 0 1 6 4.75ZM6 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H6.75A.75.75 0 0 1 6 10Zm0 5.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H6.75a.75.75 0 0 1-.75-.75ZM1.99 4.75a1 1 0 0 1 1-1H3a1 1 0 0 1 1 1v.01a1 1 0 0 1-1 1h-.01a1 1 0 0 1-1-1v-.01ZM1.99 15.25a1 1 0 0 1 1-1H3a1 1 0 0 1 1 1v.01a1 1 0 0 1-1 1h-.01a1 1 0 0 1-1-1v-.01ZM1.99 10a1 1 0 0 1 1-1H3a1 1 0 0 1 1 1v.01a1 1 0 0 1-1 1h-.01a1 1 0 0 1-1-1V10Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Runs
+        </.link>
+      </li>
+      <li>
+        <.link navigate={"#{@prefix}/runs/new"} class={@current_page == :new_run && "active"}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="size-4"
+          >
+            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+          </svg>
+          New Run
+        </.link>
+      </li>
+    </ul>
     """
   end
 
@@ -237,5 +258,41 @@ defmodule PyreWeb.Components.Layouts do
       </ul>
     </div>
     """
+  end
+
+  slot :inner_block, required: true
+
+  def h1(assigns) do
+    ~H"""
+    <h1 class="text-3xl font-light">
+      {render_slot(@inner_block)}
+    </h1>
+    """
+  end
+
+  defp sidebar_collapsed?(uri) when uri in ["", nil], do: false
+
+  defp sidebar_collapsed?(uri) do
+    uri
+    |> URI.parse()
+    |> Map.get(:query)
+    |> case do
+      nil -> %{}
+      q -> URI.decode_query(q)
+    end
+    |> Map.get("sidebar") == "collapsed"
+  end
+
+  defp toggle_sidebar_path(uri) when uri in ["", nil], do: "?sidebar=collapsed"
+
+  defp toggle_sidebar_path(uri) do
+    parsed = URI.parse(uri)
+    params = URI.decode_query(parsed.query || "")
+
+    new_nav = if params["sidebar"] == "collapsed", do: "open", else: "collapsed"
+    new_params = Map.put(params, "sidebar", new_nav)
+    new_query = URI.encode_query(new_params)
+
+    %URI{parsed | query: new_query} |> URI.to_string()
   end
 end

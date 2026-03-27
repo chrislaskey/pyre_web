@@ -1,9 +1,12 @@
 <.page_layout
   current_page={:home}
   prefix={pyre_path(@socket, "")}
+  uri={@uri}
   breadcrumbs={[]}
 >
-  <h1 class="mb-3 text-xl font-bold">Connected Apps</h1>
+  <div class="mb-6">
+    <.h1>Connected Apps</.h1>
+  </div>
 
   <.live_component
     module={PyreWeb.ConnectionPresenceComponent}

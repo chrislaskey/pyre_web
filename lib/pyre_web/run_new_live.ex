@@ -52,6 +52,11 @@ defmodule PyreWeb.RunNewLive do
   end
 
   @impl true
+  def handle_params(_params, uri, socket) do
+    {:noreply, assign(socket, :uri, uri)}
+  end
+
+  @impl true
   def handle_event("validate", %{"run" => params}, socket) do
     feature_name = Map.get(params, "feature_name", "")
 
