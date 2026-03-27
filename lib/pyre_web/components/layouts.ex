@@ -51,10 +51,10 @@ defmodule PyreWeb.Components.Layouts do
 
   def breadcrumbs(assigns) do
     ~H"""
-    <div class="breadcrumbs text-sm mb-4">
+    <div class="breadcrumbs text-sm text-base-content/60 mb-4">
       <ul>
         <li>
-          <.link navigate={@prefix}>
+          <.link class="flex gap-x-1" navigate={@prefix}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -69,6 +69,7 @@ defmodule PyreWeb.Components.Layouts do
                 d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
               />
             </svg>
+            Home
           </.link>
         </li>
         <li :for={item <- @items}>
@@ -84,7 +85,7 @@ defmodule PyreWeb.Components.Layouts do
 
   def header(assigns) do
     ~H"""
-    <div class="w-full h-16 pl-6 pr-6 items-center flex justify-between shadow-sm relative z-10">
+    <div class="w-full h-16 pl-8 pr-6 items-center flex justify-between shadow-sm relative z-10">
       <div class="flex items-center">
         <.link class="tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
           Pyre
@@ -115,7 +116,7 @@ defmodule PyreWeb.Components.Layouts do
     ~H"""
     <nav class="w-64 shrink-0 bg-base-200 py-6 px-3" style="min-height: calc(100vh - 4rem);">
       <div class="w-full">
-        <ul class="menu menu-sm w-full">
+        <ul class="menu w-full">
           <li>
             <.link navigate={@prefix} class={@current_page == :home && "active"}>
               <svg
@@ -133,6 +134,23 @@ defmodule PyreWeb.Components.Layouts do
                 />
               </svg>
               Home
+            </.link>
+          </li>
+          <li>
+            <.link
+              navigate={"#{@prefix}/connected-apps"}
+              class={@current_page in [:connected_apps] && "active"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                class="size-4"
+              >
+                <path d="M12.232 4.232a2.5 2.5 0 0 1 3.536 3.536l-1.225 1.224a.75.75 0 0 0 1.061 1.06l1.224-1.224a4 4 0 0 0-5.656-5.656l-3 3a4 4 0 0 0 .225 5.865.75.75 0 0 0 .977-1.138 2.5 2.5 0 0 1-.142-3.667l3-3Z" />
+                <path d="M11.603 7.963a.75.75 0 0 0-.977 1.138 2.5 2.5 0 0 1 .142 3.667l-3 3a2.5 2.5 0 0 1-3.536-3.536l1.225-1.224a.75.75 0 0 0-1.061-1.06l-1.224 1.224a4 4 0 0 0 5.656 5.656l3-3a4 4 0 0 0-.225-5.865Z" />
+              </svg>
+              Connected Apps
             </.link>
           </li>
           <li>

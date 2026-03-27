@@ -260,7 +260,7 @@ defmodule PyreWeb.RunShowLive do
         </span>
       </div>
       <div class="p-4">
-        <%= if @backend == :claude_cli do %>
+        <%= if @backend in [:claude_cli, :cursor_cli] do %>
           <form phx-submit="send_reply" phx-change="update_reply">
             <textarea
               name="reply"
@@ -285,7 +285,7 @@ defmodule PyreWeb.RunShowLive do
           </form>
         <% else %>
           <p class="text-sm text-base-content/50 mb-3">
-            Interactive replies require the Claude CLI backend.
+            Interactive replies require the Claude CLI or Cursor CLI backend. Codex CLI does not support session resumption in headless mode.
           </p>
           <button phx-click="continue_stage" class="btn btn-ghost btn-sm">
             Continue &rarr;

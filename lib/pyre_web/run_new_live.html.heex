@@ -201,6 +201,30 @@
           <input
             type="radio"
             name="llm_backend"
+            value="cursor_cli"
+            checked={@llm_backend == :cursor_cli}
+            phx-click="select_backend"
+            phx-value-backend="cursor_cli"
+            class="radio radio-sm radio-primary"
+          />
+          <span class="label-text">Cursor CLI</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            type="radio"
+            name="llm_backend"
+            value="codex_cli"
+            checked={@llm_backend == :codex_cli}
+            phx-click="select_backend"
+            phx-value-backend="codex_cli"
+            class="radio radio-sm radio-primary"
+          />
+          <span class="label-text">Codex CLI</span>
+        </label>
+        <label class="label cursor-pointer justify-start gap-2">
+          <input
+            type="radio"
+            name="llm_backend"
             value="req_llm"
             checked={@llm_backend == :req_llm}
             phx-click="select_backend"
@@ -212,7 +236,9 @@
       </div>
       <p class="text-sm text-base-content/50 mt-1">
         API uses ReqLLM with per-token billing. Claude CLI uses the local <code>claude</code>
-        command (free with Pro/Max subscription).
+        command (free with Pro/Max subscription). Cursor CLI uses the local <code>cursor-agent</code>
+        command (free with Cursor subscription, supports multiple models). Codex CLI uses the local
+        <code>codex</code> command (requires ChatGPT Plus/Pro or OpenAI API key).
       </p>
     </div>
 

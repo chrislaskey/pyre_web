@@ -4,9 +4,7 @@ defmodule PyreWeb.ConnectionPresenceComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="mt-8">
-      <h2 class="text-lg font-semibold mb-3">Connected Apps</h2>
-
+    <div>
       <div :if={@presences == []} class="text-base-content/50 text-sm">
         No connections
       </div>
@@ -35,7 +33,7 @@ defmodule PyreWeb.ConnectionPresenceComponent do
               <button
                 phx-click="action_execute_commands_clone_repo"
                 phx-value-connection-id={presence[:connection_id]}
-                class="btn btn-xs btn-outline btn-primary"
+                class="btn btn-sm btn-outline btn-primary"
               >
                 Clone Repo
               </button>

@@ -126,6 +126,8 @@ defmodule PyreWeb.RunNewLive do
     llm_backend =
       case backend do
         "claude_cli" -> :claude_cli
+        "cursor_cli" -> :cursor_cli
+        "codex_cli" -> :codex_cli
         _ -> :req_llm
       end
 
@@ -197,6 +199,8 @@ defmodule PyreWeb.RunNewLive do
   end
 
   defp llm_module_for(:claude_cli), do: Pyre.LLM.ClaudeCLI
+  defp llm_module_for(:cursor_cli), do: Pyre.LLM.CursorCLI
+  defp llm_module_for(:codex_cli), do: Pyre.LLM.CodexCLI
   defp llm_module_for(_), do: Pyre.LLM.ReqLLM
 
   defp upload_error_to_string(:too_large), do: "File too large (max 10 MB)"
