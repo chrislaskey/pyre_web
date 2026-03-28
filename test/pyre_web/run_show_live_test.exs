@@ -140,7 +140,8 @@ defmodule PyreWeb.RunShowLiveTest do
         workflow: :feature,
         llm: AgentMock,
         streaming: false,
-        project_dir: tmp_dir
+        project_dir: tmp_dir,
+        interactive_stages: []
       )
 
     wait_for_status(id, :complete)

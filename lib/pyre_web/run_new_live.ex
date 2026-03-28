@@ -83,7 +83,7 @@ defmodule PyreWeb.RunNewLive do
     {workflow, stages, interactive} =
       case workflow_str do
         "chat" -> {:chat, @chat_stages, MapSet.new([:generalist])}
-        "feature" -> {:feature, @feature_stages, MapSet.new()}
+        "feature" -> {:feature, @feature_stages, MapSet.new([:architecting, :engineering])}
         "prototype" -> {:prototype, @prototype_stages, MapSet.new([:prototyping])}
         "task" -> {:task, @task_stages, MapSet.new()}
         "code_review" -> {:code_review, @code_review_stages, MapSet.new()}

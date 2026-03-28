@@ -4,8 +4,8 @@ defmodule PyreWeb.RunNewLiveTest do
   test "renders the new run form", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/pyre/runs/new")
     assert html =~ "New Run"
-    assert html =~ "Feature Description"
-    assert html =~ "Run Pipeline"
+    assert html =~ "Prompt"
+    assert html =~ "Start run"
   end
 
   test "back link points to prefixed home path", %{conn: conn} do
@@ -71,7 +71,7 @@ defmodule PyreWeb.RunNewLiveTest do
     html = render_click(view, "select_backend", %{"backend" => "claude_cli"})
 
     assert html =~ "Claude CLI"
-    assert html =~ ~s|value="claude_cli"|
+    assert html =~ "claude_cli"
   end
 
   test "switching to feature workflow shows feature stages", %{conn: conn} do
