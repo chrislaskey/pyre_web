@@ -150,45 +150,62 @@ defmodule PyreWeb.RunNewLive do
     if desc == "" do
       {:noreply, put_flash(socket, :error, "Feature description cannot be empty.")}
     else
-      attachments =
-        consume_uploaded_entries(socket, :attachments, fn %{path: path}, entry ->
-          content = File.read!(path)
-
-          media_type =
-            apply(Pyre.Plugins.Artifact, :media_type_from_filename, [entry.client_name])
-
-          {:ok,
-           %{
-             filename: entry.client_name,
-             content: content,
-             media_type: media_type
-           }}
-        end)
-
-      skipped = MapSet.to_list(socket.assigns.skipped_stages)
-      interactive = MapSet.to_list(socket.assigns.interactive_stages)
-
-      llm_module = llm_module_for(socket.assigns.llm_backend)
-
       feature = if feature_name == "", do: nil, else: feature_name
 
-      case apply(Pyre.RunServer, :start_run, [
-             desc,
-             [
-               workflow: socket.assigns.workflow,
-               skipped_stages: skipped,
-               interactive_stages: interactive,
-               attachments: attachments,
-               llm: llm_module,
-               feature: feature
-             ]
-           ]) do
-        {:ok, run_id} ->
-          {:noreply, push_navigate(socket, to: pyre_path(socket, "/runs/#{run_id}"))}
+      run_params = %{
+        description: desc,
+        workflow: socket.assigns.workflow,
+        llm_backend: socket.assigns.llm_backend,
+        feature: feature
+      }
 
+      case PyreWeb.Config.authorize(:authorize_run_create, [run_params, socket]) do
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, "Failed to start run: #{inspect(reason)}")}
+          {:noreply, put_flash(socket, :error, "Not authorized: #{inspect(reason)}")}
+
+        :ok ->
+          start_run(socket, desc, feature)
       end
+    end
+  end
+
+  defp start_run(socket, desc, feature) do
+    attachments =
+      consume_uploaded_entries(socket, :attachments, fn %{path: path}, entry ->
+        content = File.read!(path)
+
+        media_type =
+          apply(Pyre.Plugins.Artifact, :media_type_from_filename, [entry.client_name])
+
+        {:ok,
+         %{
+           filename: entry.client_name,
+           content: content,
+           media_type: media_type
+         }}
+      end)
+
+    skipped = MapSet.to_list(socket.assigns.skipped_stages)
+    interactive = MapSet.to_list(socket.assigns.interactive_stages)
+
+    llm_module = llm_module_for(socket.assigns.llm_backend)
+
+    case apply(Pyre.RunServer, :start_run, [
+           desc,
+           [
+             workflow: socket.assigns.workflow,
+             skipped_stages: skipped,
+             interactive_stages: interactive,
+             attachments: attachments,
+             llm: llm_module,
+             feature: feature
+           ]
+         ]) do
+      {:ok, run_id} ->
+        {:noreply, push_navigate(socket, to: pyre_path(socket, "/runs/#{run_id}"))}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to start run: #{inspect(reason)}")}
     end
   end
 

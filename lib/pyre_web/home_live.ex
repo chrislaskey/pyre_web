@@ -33,27 +33,41 @@ defmodule PyreWeb.HomeLive do
         %{"connection-id" => connection_id},
         socket
       ) do
+    action = %{
+      type: "execute_commands",
+      connection_id: connection_id,
+      commands: [
+        "mkdir -p ~/code/pyre-runtime",
+        "git -C ~/code/pyre-runtime/pyre pull || git clone https://github.com/chrislaskey/pyre ~/code/pyre-runtime/pyre"
+      ]
+    }
+
+    case PyreWeb.Config.authorize(:authorize_remote_action, [action, socket]) do
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Not authorized: #{inspect(reason)}")}
+
+      :ok ->
+        dispatch_action(connection_id, action, socket)
+    end
+  end
+
+  defp dispatch_action(connection_id, action, socket) do
     execution_id = :crypto.strong_rand_bytes(4) |> Base.encode16(case: :lower)
     pubsub = pubsub()
 
     # Subscribe to output from this execution
     Phoenix.PubSub.subscribe(pubsub, "pyre:action:output:#{execution_id}")
 
-    action = %{
-      type: "execute_commands",
-      payload: %{
-        commands: [
-          "mkdir -p ~/code/pyre-runtime",
-          "git -C ~/code/pyre-runtime/pyre pull || git clone https://github.com/chrislaskey/pyre ~/code/pyre-runtime/pyre"
-        ]
-      }
+    channel_action = %{
+      type: action.type,
+      payload: %{commands: action.commands}
     }
 
     # Send to the connection's channel via PubSub
     Phoenix.PubSub.broadcast(
       pubsub,
       "pyre:action:input:#{connection_id}",
-      {:action, execution_id, action}
+      {:action, execution_id, channel_action}
     )
 
     socket =

@@ -35,15 +35,21 @@ defmodule PyreWeb.Socket do
   channel "pyre:*", PyreWeb.Channel
 
   @impl true
-  def connect(params, socket, _connect_info) do
-    connection_id = params["connection_id"]
+  def connect(params, socket, connect_info) do
+    case PyreWeb.Config.authorize(:authorize_socket_connect, [params, connect_info]) do
+      :ok ->
+        connection_id = params["connection_id"]
 
-    socket =
-      socket
-      |> assign(:params, params)
-      |> assign(:connection_id, connection_id)
+        socket =
+          socket
+          |> assign(:params, params)
+          |> assign(:connection_id, connection_id)
 
-    {:ok, socket}
+        {:ok, socket}
+
+      {:error, _reason} ->
+        :error
+    end
   end
 
   @impl true

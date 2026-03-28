@@ -15,11 +15,28 @@ defmodule PyreWeb.Channel do
   require Logger
 
   @impl true
-  def join("pyre:hello", _params, socket) do
-    {:ok, %{message: "hello world"}, socket}
+  def join("pyre:hello" = topic, _params, socket) do
+    case PyreWeb.Config.authorize(:authorize_channel_join, [topic, socket]) do
+      :ok -> {:ok, %{message: "hello world"}, socket}
+      {:error, reason} -> {:error, %{reason: reason}}
+    end
   end
 
-  def join("pyre:connections", params, socket) do
+  def join("pyre:connections" = topic, params, socket) do
+    case PyreWeb.Config.authorize(:authorize_channel_join, [topic, socket]) do
+      {:error, reason} ->
+        {:error, %{reason: reason}}
+
+      :ok ->
+        join_connections(params, socket)
+    end
+  end
+
+  def join("pyre:" <> _topic, _params, _socket) do
+    {:error, %{reason: "unknown topic"}}
+  end
+
+  defp join_connections(params, socket) do
     send(self(), :after_join)
 
     connection_id =
@@ -44,10 +61,6 @@ defmodule PyreWeb.Channel do
       |> assign(:connection_metadata, metadata)
 
     {:ok, %{message: "connected"}, socket}
-  end
-
-  def join("pyre:" <> _topic, _params, _socket) do
-    {:error, %{reason: "unknown topic"}}
   end
 
   @impl true

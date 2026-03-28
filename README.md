@@ -190,6 +190,67 @@ pyre_web "/pyre",
   on_mount: [{MyAppWeb.Auth, :ensure_admin}]
 ```
 
+### Authorization Hooks
+
+PyreWeb provides 5 authorization hooks that let your app gate WebSocket
+connections, channel joins, run creation, run control, and remote action
+dispatch. Create a module that `use PyreWeb.Config` and override the
+callbacks you need:
+
+```elixir
+defmodule MyApp.PyreConfig do
+  use Pyre.Config
+  use PyreWeb.Config
+
+  # --- Pyre lifecycle hooks (optional) ---
+
+  @impl Pyre.Config
+  def after_flow_complete(%Pyre.Events.FlowCompleted{} = event) do
+    MyApp.Telemetry.emit(:pyre_flow_complete, %{elapsed_ms: event.elapsed_ms})
+    :ok
+  end
+
+  # --- PyreWeb authorization hooks ---
+
+  @impl PyreWeb.Config
+  def authorize_socket_connect(params, _connect_info) do
+    case Map.get(params, "token") do
+      nil -> {:error, :missing_token}
+      token -> if MyApp.Auth.valid_token?(token), do: :ok, else: {:error, :invalid_token}
+    end
+  end
+
+  @impl PyreWeb.Config
+  def authorize_run_create(_run_params, socket) do
+    if socket.assigns[:current_user], do: :ok, else: {:error, :unauthenticated}
+  end
+end
+```
+
+Then register the module in your config. Both libraries can share one module
+since the callback names don't overlap (`after_*` for Pyre, `authorize_*` for
+PyreWeb):
+
+```elixir
+# config/config.exs
+config :pyre, config: MyApp.PyreConfig
+config :pyre_web, config: MyApp.PyreConfig
+```
+
+The 5 hooks and their arguments:
+
+| Hook | Arguments | Used in |
+|------|-----------|---------|
+| `authorize_socket_connect` | `(params, connect_info)` | `PyreWeb.Socket` |
+| `authorize_channel_join` | `(topic, socket)` | `PyreWeb.Channel` |
+| `authorize_run_create` | `(run_params, socket)` | New run form |
+| `authorize_run_control` | `(action, socket)` | Run show (stop, toggle, reply) |
+| `authorize_remote_action` | `(action, socket)` | Home page action dispatch |
+
+All callbacks return `:ok | {:error, term()}`. Defaults permit all operations.
+Exceptions in callbacks are rescued and return `:ok` (fail-open) to avoid
+locking users out when a hook crashes.
+
 ### Options
 
 | Option | Default | Description |

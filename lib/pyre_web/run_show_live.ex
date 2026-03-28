@@ -97,30 +97,44 @@ defmodule PyreWeb.RunShowLive do
   @impl true
   def handle_event("toggle_stage", %{"stage" => stage_str}, socket) do
     stage = String.to_existing_atom(stage_str)
+    action = %{type: :toggle_stage, run_id: socket.assigns.run_id, stage: stage}
 
-    case apply(Pyre.RunServer, :toggle_stage, [socket.assigns.run_id, stage]) do
-      :ok -> {:noreply, socket}
-      {:error, _} -> {:noreply, socket}
+    with :ok <- authorize_control(action, socket) do
+      case apply(Pyre.RunServer, :toggle_stage, [socket.assigns.run_id, stage]) do
+        :ok -> {:noreply, socket}
+        {:error, _} -> {:noreply, socket}
+      end
     end
   end
 
   def handle_event("toggle_interactive_stage", %{"stage" => stage_str}, socket) do
     stage = String.to_existing_atom(stage_str)
+    action = %{type: :toggle_interactive, run_id: socket.assigns.run_id, stage: stage}
 
-    case apply(Pyre.RunServer, :toggle_interactive_stage, [socket.assigns.run_id, stage]) do
-      :ok -> {:noreply, socket}
-      {:error, _} -> {:noreply, socket}
+    with :ok <- authorize_control(action, socket) do
+      case apply(Pyre.RunServer, :toggle_interactive_stage, [socket.assigns.run_id, stage]) do
+        :ok -> {:noreply, socket}
+        {:error, _} -> {:noreply, socket}
+      end
     end
   end
 
   def handle_event("send_reply", %{"reply" => text}, socket) do
-    apply(Pyre.RunServer, :send_reply, [socket.assigns.run_id, text])
-    {:noreply, assign(socket, reply_text: "")}
+    action = %{type: :send_reply, run_id: socket.assigns.run_id}
+
+    with :ok <- authorize_control(action, socket) do
+      apply(Pyre.RunServer, :send_reply, [socket.assigns.run_id, text])
+      {:noreply, assign(socket, reply_text: "")}
+    end
   end
 
   def handle_event("continue_stage", _params, socket) do
-    apply(Pyre.RunServer, :continue_stage, [socket.assigns.run_id])
-    {:noreply, socket}
+    action = %{type: :continue, run_id: socket.assigns.run_id}
+
+    with :ok <- authorize_control(action, socket) do
+      apply(Pyre.RunServer, :continue_stage, [socket.assigns.run_id])
+      {:noreply, socket}
+    end
   end
 
   def handle_event("update_reply", %{"reply" => text}, socket) do
@@ -136,8 +150,12 @@ defmodule PyreWeb.RunShowLive do
   end
 
   def handle_event("confirm_stop", _params, socket) do
-    apply(Pyre.RunServer, :stop_run, [socket.assigns.run_id])
-    {:noreply, assign(socket, confirm_stop: false)}
+    action = %{type: :stop, run_id: socket.assigns.run_id}
+
+    with :ok <- authorize_control(action, socket) do
+      apply(Pyre.RunServer, :stop_run, [socket.assigns.run_id])
+      {:noreply, assign(socket, confirm_stop: false)}
+    end
   end
 
   @impl true
@@ -398,4 +416,11 @@ defmodule PyreWeb.RunShowLive do
   defp item_class(:error), do: "block mt-1 text-error"
   defp item_class(:user_reply), do: "block mt-1 text-secondary"
   defp item_class(_), do: ""
+
+  defp authorize_control(action, socket) do
+    case PyreWeb.Config.authorize(:authorize_run_control, [action, socket]) do
+      :ok -> :ok
+      {:error, _} -> {:noreply, socket}
+    end
+  end
 end
