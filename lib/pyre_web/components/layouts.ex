@@ -95,6 +95,7 @@ defmodule PyreWeb.Components.Layouts do
           patch={toggle_menu_path(@uri)}
           class="btn btn-ghost btn-sm btn-square flex md:hidden"
           aria-label="Open menu"
+          title="Open menu"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -121,6 +122,7 @@ defmodule PyreWeb.Components.Layouts do
           patch={toggle_sidebar_path(@uri)}
           class="btn btn-ghost btn-sm btn-square hidden sm:flex"
           aria-label="Toggle sidebar"
+          title="Toggle sidebar"
         >
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="size-5">
             <rect
