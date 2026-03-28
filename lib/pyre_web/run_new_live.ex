@@ -192,6 +192,52 @@ defmodule PyreWeb.RunNewLive do
     end
   end
 
+  defp workflow_card(assigns) do
+    ~H"""
+    <div
+      phx-click="select_workflow"
+      phx-value-workflow={@value}
+      class={[
+        "cursor-pointer rounded-lg border-2 px-4 py-3 transition-colors",
+        if(@selected,
+          do: "border-primary",
+          else: "border-base-300 hover:border-primary/50"
+        )
+      ]}
+    >
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-sm font-medium">{@label}</span>
+        <span class={[
+          "badge badge-xs uppercase",
+          if(@badge == "Interactive", do: "badge-soft badge-primary", else: "badge-ghost")
+        ]}>
+          {@badge}
+        </span>
+      </div>
+      <div class="text-xs text-base-content/50 mt-0.5">{@description}</div>
+    </div>
+    """
+  end
+
+  defp backend_card(assigns) do
+    ~H"""
+    <div
+      phx-click="select_backend"
+      phx-value-backend={@value}
+      class={[
+        "cursor-pointer rounded-lg border-2 px-4 py-3 transition-colors",
+        if(@selected,
+          do: "border-primary",
+          else: "border-base-300 hover:border-primary/50"
+        )
+      ]}
+    >
+      <div class="text-sm font-medium">{@label}</div>
+      <div class="text-xs text-base-content/50 mt-0.5">{@description}</div>
+    </div>
+    """
+  end
+
   defp flash_group(assigns) do
     ~H"""
     <div :if={msg = Phoenix.Flash.get(@flash, :error)} class="alert alert-error mb-4">

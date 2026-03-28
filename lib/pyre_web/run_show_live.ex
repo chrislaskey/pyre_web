@@ -284,16 +284,16 @@ defmodule PyreWeb.RunShowLive do
                 phx-click="continue_stage"
                 class="btn btn-ghost btn-sm"
               >
-                Continue &rarr;
+                Mark complete and continue &rarr;
               </button>
             </div>
           </form>
         <% else %>
           <p class="text-sm text-base-content/50 mb-3">
-            Interactive replies require the Claude CLI or Cursor CLI backend. Codex CLI does not support session resumption in headless mode.
+            Interactive replies require a backend that supports resuming sessions. The current backend is not configured for it.
           </p>
           <button phx-click="continue_stage" class="btn btn-ghost btn-sm">
-            Continue &rarr;
+            Mark complete and continue &rarr;
           </button>
         <% end %>
       </div>

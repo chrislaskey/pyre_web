@@ -347,6 +347,16 @@ defmodule PyreWeb.Components.Layouts do
     """
   end
 
+  slot :inner_block, required: true
+
+  def h2(assigns) do
+    ~H"""
+    <h2 class="text-2xl font-light">
+      {render_slot(@inner_block)}
+    </h2>
+    """
+  end
+
   defp sidebar_collapsed?(uri) when uri in ["", nil], do: false
 
   defp sidebar_collapsed?(uri) do
