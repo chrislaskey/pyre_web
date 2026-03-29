@@ -2,7 +2,7 @@ defmodule PyreWeb.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/chrislaskey/pyre"
+  @source_url "https://github.com/chrislaskey/pyre_web"
 
   def project do
     [
@@ -12,7 +12,7 @@ defmodule PyreWeb.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Web interface for the Pyre multi-agent LLM framework.",
+      description: "Web interface for Pyre (github.com/chrislaskey/pyre)",
       package: package(),
       source_url: @source_url
     ]
@@ -27,10 +27,10 @@ defmodule PyreWeb.MixProject do
 
   defp deps do
     [
-      {:pyre, path: "../pyre", only: :test},
       {:phoenix_live_view, "~> 1.0"},
       {:jason, "~> 1.0"},
-      {:lazy_html, ">= 0.1.0", only: :test}
+      {:lazy_html, ">= 0.1.0", only: :test},
+      {:pyre_web, path: "../pyre_web", only: :test}
     ]
   end
 
