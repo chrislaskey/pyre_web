@@ -82,9 +82,7 @@ defmodule PyreWeb.Config do
       apply(mod, hook, args)
     rescue
       e ->
-        Logger.warning(
-          "PyreWeb.Config hook #{hook} raised: #{Exception.message(e)}"
-        )
+        Logger.warning("PyreWeb.Config hook #{hook} raised: #{Exception.message(e)}")
 
         :ok
     end
