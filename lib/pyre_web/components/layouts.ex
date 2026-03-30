@@ -30,6 +30,7 @@ defmodule PyreWeb.Components.Layouts do
   def page_layout(assigns) do
     ~H"""
     <div class="flex flex-col min-h-screen">
+      <div id="pyre-notifications" phx-hook="Notifications"></div>
       <.page_header current_page={@current_page} prefix={@prefix} uri={@uri} />
       <.mobile_menu current_page={@current_page} prefix={@prefix} uri={@uri} />
       <div class="flex flex-1">
@@ -117,6 +118,7 @@ defmodule PyreWeb.Components.Layouts do
         </.link>
       </div>
       <div class="flex items-center gap-x-1">
+        <.notification_bell />
         <.theme_selector />
         <.link
           patch={toggle_sidebar_path(@uri)}
@@ -289,6 +291,39 @@ defmodule PyreWeb.Components.Layouts do
         </.link>
       </li>
     </ul>
+    """
+  end
+
+  def notification_bell(assigns) do
+    ~H"""
+    <button
+      id="pyre-notification-bell"
+      type="button"
+      class="btn btn-ghost btn-sm"
+      title="Enable desktop notifications"
+    >
+      <span class="relative">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-4"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+          />
+        </svg>
+        <span
+          data-notification-indicator
+          class="hidden absolute -top-1 -right-1 w-2 h-2 rounded-full bg-success"
+        >
+        </span>
+      </span>
+    </button>
     """
   end
 

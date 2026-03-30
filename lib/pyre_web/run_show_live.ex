@@ -164,7 +164,12 @@ defmodule PyreWeb.RunShowLive do
   end
 
   def handle_info({:pyre_run_status, _id, status}, socket) do
-    {:noreply, assign(socket, status: status)}
+    socket =
+      socket
+      |> assign(status: status)
+      |> maybe_notify_status(socket.assigns.run_id, status)
+
+    {:noreply, socket}
   end
 
   def handle_info({:pyre_run_phase, _id, phase}, socket) do
@@ -180,7 +185,17 @@ defmodule PyreWeb.RunShowLive do
   end
 
   def handle_info({:pyre_waiting_for_input, _id, phase}, socket) do
-    {:noreply, assign(socket, waiting_for_input: true, waiting_phase: phase)}
+    socket =
+      socket
+      |> assign(waiting_for_input: true, waiting_phase: phase)
+      |> push_event("pyre:notify", %{
+        title: "Input needed",
+        body: "Run #{socket.assigns.run_id} is waiting for your response",
+        level: "warning",
+        tag: "pyre-run-#{socket.assigns.run_id}"
+      })
+
+    {:noreply, socket}
   end
 
   def handle_info({:pyre_stage_resumed, _id, _phase}, socket) do
@@ -416,6 +431,26 @@ defmodule PyreWeb.RunShowLive do
   defp item_class(:error), do: "block mt-1 text-error"
   defp item_class(:user_reply), do: "block mt-1 text-secondary"
   defp item_class(_), do: ""
+
+  defp maybe_notify_status(socket, run_id, :complete) do
+    push_event(socket, "pyre:notify", %{
+      title: "Run completed",
+      body: "Run #{run_id} finished successfully",
+      level: "success",
+      tag: "pyre-run-#{run_id}"
+    })
+  end
+
+  defp maybe_notify_status(socket, run_id, :error) do
+    push_event(socket, "pyre:notify", %{
+      title: "Run failed",
+      body: "Run #{run_id} encountered an error",
+      level: "error",
+      tag: "pyre-run-#{run_id}"
+    })
+  end
+
+  defp maybe_notify_status(socket, _run_id, _status), do: socket
 
   defp authorize_control(action, socket) do
     case PyreWeb.Config.authorize(:authorize_run_control, [action, socket]) do

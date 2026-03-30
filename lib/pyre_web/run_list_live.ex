@@ -29,10 +29,36 @@ defmodule PyreWeb.RunListLive do
   end
 
   @impl true
-  def handle_info({:pyre_run_status, _id, _status}, socket) do
+  def handle_info({:pyre_run_status, id, status}, socket) do
     runs = apply(Pyre.RunServer, :list_runs, [])
-    {:noreply, assign(socket, runs: runs)}
+
+    socket =
+      socket
+      |> assign(runs: runs)
+      |> maybe_notify_status(id, status)
+
+    {:noreply, socket}
   end
+
+  defp maybe_notify_status(socket, run_id, :complete) do
+    push_event(socket, "pyre:notify", %{
+      title: "Run completed",
+      body: "Run #{run_id} finished successfully",
+      level: "success",
+      tag: "pyre-run-#{run_id}"
+    })
+  end
+
+  defp maybe_notify_status(socket, run_id, :error) do
+    push_event(socket, "pyre:notify", %{
+      title: "Run failed",
+      body: "Run #{run_id} encountered an error",
+      level: "error",
+      tag: "pyre-run-#{run_id}"
+    })
+  end
+
+  defp maybe_notify_status(socket, _run_id, _status), do: socket
 
   defp status_badge_class(:running), do: "badge-warning"
   defp status_badge_class(:complete), do: "badge-success"
