@@ -75,6 +75,8 @@ defmodule PyreWeb.RunShowLive do
             waiting_for_input: Map.get(run_state, :waiting_for_input, false),
             waiting_phase: run_state.phase,
             backend: Map.get(run_state, :backend, :other),
+            raw_session_ids: Map.get(run_state, :session_ids, %{}),
+            session_ids: resolve_session_ids(Map.get(run_state, :session_ids, %{})),
             phases: phases,
             phase_order: phase_order,
             confirm_stop: false,
@@ -173,7 +175,10 @@ defmodule PyreWeb.RunShowLive do
   end
 
   def handle_info({:pyre_run_phase, _id, phase}, socket) do
-    {:noreply, assign(socket, phase: phase)}
+    {:noreply,
+     socket
+     |> assign(phase: phase)
+     |> assign(session_ids: resolve_session_ids(socket.assigns.raw_session_ids))}
   end
 
   def handle_info({:pyre_run_skipped_stages, _id, skipped}, socket) do
@@ -219,6 +224,7 @@ defmodule PyreWeb.RunShowLive do
           interactive={@interactive}
           waiting_for_input={@waiting_for_input}
           phase_order={@phase_order}
+          session_id={Map.get(@session_ids, phase_key)}
         />
       </div>
     </div>
@@ -240,51 +246,56 @@ defmodule PyreWeb.RunShowLive do
       )
 
     ~H"""
-    <div class="flex items-center gap-3">
-      <%!-- Skip toggle --%>
-      <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
-        <input
-          type="checkbox"
-          class="toggle toggle-sm toggle-primary"
-          checked={@phase_key not in @skipped}
-          phx-click="toggle_stage"
-          phx-value-stage={@phase_key}
-        />
-      <% else %>
-        <input
-          type="checkbox"
-          class="toggle toggle-sm"
-          checked={@phase_key not in @skipped}
-          disabled
-        />
-      <% end %>
-
-      <span class={"text-sm flex-1 #{stage_label_class(@stage_status)}"}>
-        {@label}
-      </span>
-
-      <.stage_badge status={@stage_status} waiting={@waiting_for_input and @phase_key == @current} />
-
-      <%!-- Interactive toggle --%>
-      <label class="flex items-center gap-1 cursor-pointer">
-        <span class="text-xs text-base-content/40">interactive</span>
+    <div>
+      <div class="flex items-center gap-3">
+        <%!-- Skip toggle --%>
         <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
           <input
             type="checkbox"
-            class="toggle toggle-xs toggle-secondary"
-            checked={@phase_key in @interactive}
-            phx-click="toggle_interactive_stage"
+            class="toggle toggle-sm toggle-primary"
+            checked={@phase_key not in @skipped}
+            phx-click="toggle_stage"
             phx-value-stage={@phase_key}
           />
         <% else %>
           <input
             type="checkbox"
-            class="toggle toggle-xs toggle-secondary pointer-events-none"
-            checked={@phase_key in @interactive}
-            tabindex="-1"
+            class="toggle toggle-sm"
+            checked={@phase_key not in @skipped}
+            disabled
           />
         <% end %>
-      </label>
+
+        <span class={"text-sm flex-1 #{stage_label_class(@stage_status)}"}>
+          {@label}
+        </span>
+
+        <.stage_badge status={@stage_status} waiting={@waiting_for_input and @phase_key == @current} />
+
+        <%!-- Interactive toggle --%>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <span class="text-xs text-base-content/40">interactive</span>
+          <%= if toggleable?(@phase_key, @current, @status, @phase_order) do %>
+            <input
+              type="checkbox"
+              class="toggle toggle-xs toggle-secondary"
+              checked={@phase_key in @interactive}
+              phx-click="toggle_interactive_stage"
+              phx-value-stage={@phase_key}
+            />
+          <% else %>
+            <input
+              type="checkbox"
+              class="toggle toggle-xs toggle-secondary pointer-events-none"
+              checked={@phase_key in @interactive}
+              tabindex="-1"
+            />
+          <% end %>
+        </label>
+      </div>
+      <div :if={@session_id} class="ml-9 mt-0.5">
+        <span class="text-[11px] font-mono text-base-content/30 select-all">{@session_id}</span>
+      </div>
     </div>
     """
   end
@@ -451,6 +462,13 @@ defmodule PyreWeb.RunShowLive do
   end
 
   defp maybe_notify_status(socket, _run_id, _status), do: socket
+
+  defp resolve_session_ids(raw_ids) do
+    Map.new(raw_ids, fn {phase, pyre_id} ->
+      backend_id = apply(Pyre.Session.Registry, :get, [pyre_id])
+      {phase, backend_id || pyre_id}
+    end)
+  end
 
   defp authorize_control(action, socket) do
     case PyreWeb.Config.authorize(:authorize_run_control, [action, socket]) do
