@@ -1,7 +1,10 @@
 ## PyreWeb
 
-Web interface for the [Pyre](https://github.com/chrislaskey/pyre) multi-agent
-LLM framework. Mounts into an existing Phoenix LiveView application as a
+> For a fully configured standlone application see [Pyre App](https://github.com/chrislaskey/pyre_app)
+
+The modular web interface dependency for [Pyre](https://github.com/chrislaskey/pyre).
+
+Mounts into an existing Phoenix LiveView application as a
 standalone dashboard — similar to
 [Phoenix LiveDashboard](https://github.com/phoenixframework/phoenix_live_dashboard).
 
@@ -23,65 +26,22 @@ Then fetch dependencies:
 
 ```bash
 mix deps.get
+mix pyre.install
 ```
 
-### Setup
+This creates:
 
-#### 1. Configure PubSub
+- `priv/pyre/personas/` — Editable persona files for each agent
+- `priv/pyre/features/.gitkeep` — Directory where pipeline artifacts are stored
+- `.gitignore` entries to exclude run output from version control
 
-Tell Pyre which PubSub server to use for real-time run updates. This should
-match the PubSub already started in your application's supervision tree:
+### Configuration
 
-```elixir
-# config/config.exs
-config :pyre, :pubsub, MyApp.PubSub
-```
+#### Pyre
 
-#### 2. Configure GitHub (for Shipper)
+Follow the [Pyre app configuration steps](https://github.com/chrislaskey/pyre_core?tab=readme-ov-file#configuration).
 
-To enable the Shipper agent (creates branches and opens GitHub PRs), configure
-your repository in `config/runtime.exs`:
-
-```elixir
-# config/runtime.exs
-if System.get_env("GITHUB_REPO_URL") do
-  config :pyre, :github,
-    repositories: [
-      [
-        url: System.get_env("GITHUB_REPO_URL"),
-        token: System.get_env("GITHUB_TOKEN"),
-        base_branch: System.get_env("GITHUB_BASE_BRANCH", "main")
-      ]
-    ]
-end
-```
-
-Without this configuration, the pipeline still runs but the Shipper will skip
-PR creation.
-
-#### 2b. Configure Allowed Paths (monorepos)
-
-If your agents need to read or write files outside the working directory (e.g.,
-sibling apps in a monorepo), configure additional allowed paths:
-
-```bash
-export PYRE_ALLOWED_PATHS="/path/to/apps/other,/path/to/libs/shared"
-```
-
-Or in your application config:
-
-```elixir
-# config/runtime.exs
-config :pyre, allowed_paths: [
-  "/path/to/apps/other",
-  "/path/to/libs/shared"
-]
-```
-
-Relative paths are resolved against the working directory. See the
-[Pyre README](../pyre/README.md) for full details.
-
-#### 3. Add routes
+#### Add PyreWeb routes
 
 Add the PyreWeb route to your router:
 
@@ -97,35 +57,9 @@ end
 
 Visit `/pyre` in your browser to see the PyreWeb interface.
 
-#### 4. (Optional) Support Pyre native app
+#### Track connected apps
 
-PyreWeb serves its own JavaScript to connect to your app's LiveView socket.
-Your endpoint must have the standard LiveView socket configured:
-
-```elixir
-# lib/my_app_web/endpoint.ex
-socket "/live", Phoenix.LiveView.Socket
-```
-
-This is included by default in Phoenix applications generated with
-`mix phx.new`.
-
-To enable the Pyre native app to connect over Phoenix channels, add the
-`PyreWeb.Socket` to your endpoint. The path must match the route prefix you
-use in step 4 below (e.g., `/pyre`):
-
-```elixir
-# lib/my_app_web/endpoint.ex
-socket "/pyre", PyreWeb.Socket,
-  websocket: [connect_info: [:peer_data, :x_headers]]
-```
-
-> **Why the endpoint?** Phoenix channels are handled at the endpoint level,
-> not the router. The `socket/3` declaration tells Phoenix to upgrade
-> WebSocket connections at the given path before they reach the router's
-> plug pipeline. This is the same pattern used by `Phoenix.LiveView.Socket`.
-
-To track connected native apps on the homepage, add `PyreWeb.Presence` to
+To track connected apps on the homepage, add `PyreWeb.Presence` to
 your supervision tree. It reuses the PubSub server from `config :pyre, :pubsub`
 — no additional configuration is needed:
 
@@ -133,13 +67,20 @@ your supervision tree. It reuses the PubSub server from `config :pyre, :pubsub`
 # lib/my_app/application.ex
 children = [
   # ... existing children ...
+  # {Phoenix.PubSub, name: MyApp.PubSub}
   PyreWeb.Presence
+  # MyAppWeb.Endpoint
 ]
 ```
 
-This enables the homepage to display which native app instances are currently
-connected, along with their system information (computer name, CPU, memory,
-OS version).
+This enables the homepage to display which app instances are currently
+connected.
+
+#### (Optional) Use remote macOS hosts as runners using PyreNative app
+
+PyreWeb supports using multiple remote macOS hosts as runners. This lets you leverage fully configured development environments and load balance requests across your LLM subscriptions. Setup is easy, see:
+
+> The [Pyre Native App](https://github.com/chrislaskey/pyre_native) repository
 
 ### Pages
 
