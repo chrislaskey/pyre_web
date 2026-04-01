@@ -250,7 +250,7 @@ defmodule PyreWeb.Components.Layouts do
         </.link>
       </li>
       <li>
-        <.link navigate={if @prefix, do: @prefix, else: "/"} class={@current_page == :home && "active"}>
+        <.link navigate={if @prefix != "", do: @prefix, else: "/"} class={@current_page == :home && "active"}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
