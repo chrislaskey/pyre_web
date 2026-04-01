@@ -166,7 +166,7 @@ defmodule PyreWeb.WebhookController do
   # --- Config helpers ---
 
   defp github_app_config(key) do
-    case PyreWeb.Config.call(:load_github_app, []) do
+    case PyreWeb.Config.call(:get_github_app, []) do
       config when is_map(config) and map_size(config) > 0 ->
         Map.get(config, key)
 

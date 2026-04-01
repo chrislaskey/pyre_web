@@ -57,14 +57,15 @@ defmodule PyreWeb.Router do
           live "/runs/new", PyreWeb.RunNewLive, :new, route_opts
           live "/runs/:id", PyreWeb.RunShowLive, :show, route_opts
 
-          live "/github/setup", PyreWeb.GitHubSetupLive, :setup, route_opts
+          live "/settings", PyreWeb.SettingsLive, :index, route_opts
+          live "/settings/github-apps", PyreWeb.SettingsGitHubAppsIndexLive, :index, route_opts
+          live "/settings/github-apps/new", PyreWeb.SettingsGitHubAppsShowLive, :new, route_opts
         end
 
         get "/github/callback", PyreWeb.GitHubCallbackController, :callback,
           as: :pyre_github_callback
 
-        post "/webhooks/github", PyreWeb.WebhookController, :github,
-          as: :pyre_webhook
+        post "/webhooks/github", PyreWeb.WebhookController, :github, as: :pyre_webhook
       end
 
       unless Module.get_attribute(__MODULE__, :pyre_web_prefix) do

@@ -27,12 +27,12 @@ defmodule PyreWeb.Config do
         end
 
         @impl true
-        def store_github_app(credentials) do
+        def update_github_app(credentials) do
           MyApp.Repo.insert_or_update_github_app(credentials)
         end
 
         @impl true
-        def load_github_app do
+        def get_github_app do
           MyApp.Repo.get_github_app()
         end
       end
@@ -88,18 +88,22 @@ defmodule PyreWeb.Config do
   Default implementation: no-op (returns `:ok`). Override in consuming apps
   to persist credentials to a database.
   """
-  @callback store_github_app(credentials :: map()) :: :ok | {:error, term()}
+  @callback update_github_app(credentials :: map()) :: :ok | {:error, term()}
 
   @doc """
   Loads stored GitHub App credentials.
 
-  Should return a map with the same keys as `store_github_app/1`,
+  Should return a map with the same keys as `update_github_app/1`,
   or `nil` if no credentials are stored.
 
-  Default implementation: returns `nil`. Override in consuming apps
-  to load credentials from a database.
+  Default implementation: reads from environment variables
+  (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`,
+  `GITHUB_APP_BOT_SLUG`) and falls back to `config :pyre, :github_app`.
+  Returns `nil` if no credentials are found.
+
+  Override in consuming apps to load credentials from a database.
   """
-  @callback load_github_app() :: map() | nil
+  @callback get_github_app() :: map() | nil
 
   # -- Public API --
 
@@ -171,9 +175,9 @@ defmodule PyreWeb.Config do
       @impl PyreWeb.Config
       def authorize_webhook(_event, _payload), do: :ok
       @impl PyreWeb.Config
-      def store_github_app(_credentials), do: :ok
+      def update_github_app(_credentials), do: :ok
       @impl PyreWeb.Config
-      def load_github_app, do: nil
+      def get_github_app, do: PyreWeb.Config.get_github_app_from_env()
 
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
@@ -181,8 +185,8 @@ defmodule PyreWeb.Config do
                      authorize_run_control: 2,
                      authorize_remote_action: 2,
                      authorize_webhook: 2,
-                     store_github_app: 1,
-                     load_github_app: 0
+                     update_github_app: 1,
+                     get_github_app: 0
     end
   end
 
@@ -194,6 +198,26 @@ defmodule PyreWeb.Config do
   def authorize_run_control(_action, _socket), do: :ok
   def authorize_remote_action(_action, _socket), do: :ok
   def authorize_webhook(_event, _payload), do: :ok
-  def store_github_app(_credentials), do: :ok
-  def load_github_app, do: nil
+  def update_github_app(_credentials), do: :ok
+  def get_github_app, do: get_github_app_from_env()
+
+  @doc false
+  def get_github_app_from_env do
+    env_config = %{
+      app_id: System.get_env("GITHUB_APP_ID"),
+      private_key: System.get_env("GITHUB_APP_PRIVATE_KEY"),
+      webhook_secret: System.get_env("GITHUB_WEBHOOK_SECRET"),
+      bot_slug: System.get_env("GITHUB_APP_BOT_SLUG")
+    }
+
+    if env_config.app_id do
+      env_config
+    else
+      case Application.get_env(:pyre, :github_app) do
+        nil -> nil
+        config when is_list(config) -> Map.new(config)
+        config when is_map(config) -> config
+      end
+    end
+  end
 end

@@ -42,26 +42,26 @@ defmodule PyreWeb.ConfigTest do
   end
 
   describe "call/2 with defaults" do
-    test "store_github_app returns :ok" do
+    test "update_github_app returns :ok" do
       Application.delete_env(:pyre_web, :config)
-      assert :ok = PyreWeb.Config.call(:store_github_app, [%{app_id: "123"}])
+      assert :ok = PyreWeb.Config.call(:update_github_app, [%{app_id: "123"}])
     end
 
-    test "load_github_app returns nil" do
+    test "get_github_app returns nil" do
       Application.delete_env(:pyre_web, :config)
-      assert nil == PyreWeb.Config.call(:load_github_app, [])
+      assert nil == PyreWeb.Config.call(:get_github_app, [])
     end
   end
 
   describe "call/2 with custom module" do
-    test "dispatches store_github_app to configured module" do
+    test "dispatches update_github_app to configured module" do
       Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
-      assert :ok = PyreWeb.Config.call(:store_github_app, [%{app_id: "123"}])
+      assert :ok = PyreWeb.Config.call(:update_github_app, [%{app_id: "123"}])
     end
 
-    test "dispatches load_github_app to configured module" do
+    test "dispatches get_github_app to configured module" do
       Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
-      result = PyreWeb.Config.call(:load_github_app, [])
+      result = PyreWeb.Config.call(:get_github_app, [])
       assert %{app_id: "test-app"} = result
     end
 
@@ -70,10 +70,10 @@ defmodule PyreWeb.ConfigTest do
 
       log =
         capture_log(fn ->
-          assert nil == PyreWeb.Config.call(:load_github_app, [])
+          assert nil == PyreWeb.Config.call(:get_github_app, [])
         end)
 
-      assert log =~ "PyreWeb.Config hook load_github_app raised"
+      assert log =~ "PyreWeb.Config hook get_github_app raised"
     end
   end
 
@@ -134,8 +134,8 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = mod.authorize_run_control(%{}, %{})
       assert :ok = mod.authorize_remote_action(%{}, %{})
       assert :ok = mod.authorize_webhook("event", %{})
-      assert :ok = mod.store_github_app(%{})
-      assert nil == mod.load_github_app()
+      assert :ok = mod.update_github_app(%{})
+      assert nil == mod.get_github_app()
     end
 
     test "allows overriding individual callbacks" do
@@ -186,10 +186,10 @@ defmodule PyreWeb.ConfigTest do
     use PyreWeb.Config
 
     @impl true
-    def store_github_app(_credentials), do: :ok
+    def update_github_app(_credentials), do: :ok
 
     @impl true
-    def load_github_app, do: %{app_id: "test-app", bot_slug: "test-bot"}
+    def get_github_app, do: %{app_id: "test-app", bot_slug: "test-bot"}
   end
 
   defmodule Crasher do
@@ -203,6 +203,6 @@ defmodule PyreWeb.ConfigTest do
     use PyreWeb.Config
 
     @impl true
-    def load_github_app, do: raise("data boom")
+    def get_github_app, do: raise("data boom")
   end
 end

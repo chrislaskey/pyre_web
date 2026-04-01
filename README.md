@@ -61,6 +61,48 @@ macro mounts all routes including the GitHub webhook endpoint
 protection automatically since it receives requests from GitHub, not a
 browser.
 
+#### Lifecycle hooks
+
+Pyre and PyreWeb dispatches lifecycle events to a configurable callback module. The default
+behaviour can be overwritten by creating a custom module and defining callback functions.
+
+You can use the same module for both `Pyre.Config` and `PyreWeb.Config`:
+
+```elixir
+defmodule MyApp.PyreConfig do
+  use Pyre.Config
+  use PyreWeb.Config
+
+  # Pyre Callbacks
+
+  @impl Pyre.Config
+  def after_flow_complete(%Pyre.Events.FlowCompleted{} = event) do
+    MyApp.Telemetry.emit(:pyre_flow_complete, %{elapsed_ms: event.elapsed_ms})
+    :ok
+  end
+
+  # PyreWeb Callbacks
+
+  @impl PyreWeb.Config
+  def authorize_socket_connect(params, _connect_info) do
+    case Map.get(params, "token") do
+      nil -> {:error, :missing_token}
+      token -> if MyApp.Auth.valid_token?(token), do: :ok, else: {:error, :invalid_token}
+    end
+  end
+end
+```
+
+Then register it in your config:
+
+```elixir
+# config/config.exs
+config :pyre, config: MyApp.PyreConfig
+```
+
+Any callback not overridden returns `:ok` by default. Exceptions in callbacks
+are rescued and logged — they never crash the running flow.
+
 #### Supervision tree
 
 PyreWeb is a library — it has no OTP application of its own. Optional
@@ -114,7 +156,7 @@ Mentions inside code blocks or blockquotes are ignored.
 #### Setup
 
 1. Add `PyreWeb.ReviewQueue` to your supervision tree (see [Supervision tree](#supervision-tree))
-2. Visit `/pyre/github/setup` to register a GitHub App via manifest flow
+2. Visit `/pyre/settings/github-apps/new` to register a GitHub App via manifest flow
 3. Configure the webhook secret and bot slug:
 
 ```elixir
@@ -124,7 +166,7 @@ config :pyre, :github_app,
   bot_slug: System.get_env("GITHUB_BOT_SLUG")
 ```
 
-4. Implement the `store_github_app/1` and `load_github_app/0` callbacks in your
+4. Implement the `update_github_app/1` and `get_github_app/0` callbacks in your
    config module to persist the App credentials (see [Authorization Hooks](#authorization-hooks))
 
 ### Pages
@@ -135,7 +177,8 @@ config :pyre, :github_app,
 | `/pyre/runs` | List of all pipeline runs with status |
 | `/pyre/runs/new` | Form to start a new pipeline run |
 | `/pyre/runs/:id` | Streaming output for a specific run |
-| `/pyre/github/setup` | GitHub App registration via manifest flow |
+| `/pyre/settings` | Settings index with links to configuration pages |
+| `/pyre/settings/github-apps/new` | GitHub App registration via manifest flow |
 | `POST /pyre/webhooks/github` | GitHub webhook endpoint (API, not browser) |
 
 Run processes are managed by `Pyre.RunServer` — a GenServer per run, supervised
@@ -240,8 +283,8 @@ PyreWeb.Config also provides 2 persistence callbacks for GitHub App credentials:
 
 | Callback | Arguments | Description |
 |----------|-----------|-------------|
-| `store_github_app` | `(credentials)` | Persist GitHub App credentials after setup |
-| `load_github_app` | `()` | Load stored credentials (returns map or nil) |
+| `update_github_app` | `(credentials)` | Persist GitHub App credentials after setup |
+| `get_github_app` | `()` | Load stored credentials (returns map or nil) |
 
 All callbacks return `:ok | {:error, term()}`. Defaults permit all operations.
 Exceptions in callbacks are rescued and return `:ok` (fail-open) to avoid
