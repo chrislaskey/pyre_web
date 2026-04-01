@@ -1,4 +1,4 @@
-defmodule PyreWeb.SettingsGitHubAppsIndexLive do
+defmodule PyreWeb.SettingsGithubAppsIndexLive do
   @moduledoc """
   GitHub Apps landing page showing current configuration and a link to register.
   """

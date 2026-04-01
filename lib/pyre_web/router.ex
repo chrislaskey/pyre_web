@@ -58,8 +58,8 @@ defmodule PyreWeb.Router do
           live "/runs/:id", PyreWeb.RunShowLive, :show, route_opts
 
           live "/settings", PyreWeb.SettingsLive, :index, route_opts
-          live "/settings/github-apps", PyreWeb.SettingsGitHubAppsIndexLive, :index, route_opts
-          live "/settings/github-apps/new", PyreWeb.SettingsGitHubAppsShowLive, :new, route_opts
+          live "/settings/github-apps", PyreWeb.SettingsGithubAppsIndexLive, :index, route_opts
+          live "/settings/github-apps/new", PyreWeb.SettingsGithubAppsShowLive, :new, route_opts
         end
 
         get "/github/callback", PyreWeb.GitHubCallbackController, :callback,

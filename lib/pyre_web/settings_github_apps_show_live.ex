@@ -1,4 +1,4 @@
-defmodule PyreWeb.SettingsGitHubAppsShowLive do
+defmodule PyreWeb.SettingsGithubAppsShowLive do
   @moduledoc """
   GitHub App setup page using the manifest flow.
 
