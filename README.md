@@ -55,32 +55,77 @@ scope "/" do
 end
 ```
 
-Visit `/pyre` in your browser to see the PyreWeb interface.
+Visit `/pyre` in your browser to see the PyreWeb interface. The `pyre_web`
+macro mounts all routes including the GitHub webhook endpoint
+(`POST /pyre/webhooks/github`). The webhook controller skips CSRF
+protection automatically since it receives requests from GitHub, not a
+browser.
 
-#### Track connected apps
+#### Supervision tree
 
-To track connected apps on the homepage, add `PyreWeb.Presence` to
-your supervision tree. It reuses the PubSub server from `config :pyre, :pubsub`
-— no additional configuration is needed:
+PyreWeb is a library — it has no OTP application of its own. Optional
+processes are added to the host app's supervision tree as needed:
 
 ```elixir
 # lib/my_app/application.ex
 children = [
   # ... existing children ...
   # {Phoenix.PubSub, name: MyApp.PubSub}
-  PyreWeb.Presence
+  PyreWeb.Presence,
+  PyreWeb.ReviewQueue
   # MyAppWeb.Endpoint
 ]
 ```
 
-This enables the homepage to display which app instances are currently
-connected.
+| Child | Purpose | Required? |
+|-------|---------|-----------|
+| `PyreWeb.Presence` | Tracks connected native app instances on the homepage | Optional |
+| `PyreWeb.ReviewQueue` | Processes `@mention`-triggered PR review jobs from webhooks | Optional |
+
+Both modules expose a `running?/0` function. When not started, their
+features gracefully no-op (e.g. webhook mentions are silently ignored).
 
 #### (Optional) Use remote macOS hosts as runners using PyreNative app
 
 PyreWeb supports using multiple remote macOS hosts as runners. This lets you leverage fully configured development environments and load balance requests across your LLM subscriptions. Setup is easy, see:
 
 > The [Pyre Native App](https://github.com/chrislaskey/pyre_native) repository
+
+### GitHub App PR Reviews
+
+PyreWeb supports `@mention`-triggered PR reviews via a GitHub App. When someone
+comments `@your-bot review` on a pull request, the webhook controller parses the
+mention, enqueues the review job, and dispatches it to `Pyre.RemoteReview` in
+pyre_core.
+
+**Flow**: Webhook → `WebhookController` (verify HMAC + parse) → `PyreWeb.MentionParser` → `PyreWeb.ReviewQueue` (rate-limited, bounded concurrency) → `Pyre.RemoteReview.run/1`
+
+#### Supported commands
+
+| Command | Example | Description |
+|---------|---------|-------------|
+| `review` | `@bot review` | Run a full code review on the PR |
+| `explain` | `@bot explain the auth changes` | Explain specific code |
+| `help` | `@bot help` | Show available commands |
+| *(other)* | `@bot what about error handling?` | Follow-up question on previous review |
+
+Mentions inside code blocks or blockquotes are ignored.
+
+#### Setup
+
+1. Add `PyreWeb.ReviewQueue` to your supervision tree (see [Supervision tree](#supervision-tree))
+2. Visit `/pyre/github/setup` to register a GitHub App via manifest flow
+3. Configure the webhook secret and bot slug:
+
+```elixir
+# config/runtime.exs
+config :pyre, :github_app,
+  webhook_secret: System.get_env("GITHUB_WEBHOOK_SECRET"),
+  bot_slug: System.get_env("GITHUB_BOT_SLUG")
+```
+
+4. Implement the `store_github_app/1` and `load_github_app/0` callbacks in your
+   config module to persist the App credentials (see [Authorization Hooks](#authorization-hooks))
 
 ### Pages
 
@@ -90,6 +135,8 @@ PyreWeb supports using multiple remote macOS hosts as runners. This lets you lev
 | `/pyre/runs` | List of all pipeline runs with status |
 | `/pyre/runs/new` | Form to start a new pipeline run |
 | `/pyre/runs/:id` | Streaming output for a specific run |
+| `/pyre/github/setup` | GitHub App registration via manifest flow |
+| `POST /pyre/webhooks/github` | GitHub webhook endpoint (API, not browser) |
 
 Run processes are managed by `Pyre.RunServer` — a GenServer per run, supervised
 by a DynamicSupervisor and registered in a Registry. This means:
@@ -133,10 +180,10 @@ pyre_web "/pyre",
 
 ### Authorization Hooks
 
-PyreWeb provides 5 authorization hooks that let your app gate WebSocket
-connections, channel joins, run creation, run control, and remote action
-dispatch. Create a module that `use PyreWeb.Config` and override the
-callbacks you need:
+PyreWeb provides 6 authorization hooks that let your app gate WebSocket
+connections, channel joins, run creation, run control, remote action
+dispatch, and webhook processing. Create a module that `use PyreWeb.Config`
+and override the callbacks you need:
 
 ```elixir
 defmodule MyApp.PyreConfig do
@@ -178,7 +225,7 @@ config :pyre, config: MyApp.PyreConfig
 config :pyre_web, config: MyApp.PyreConfig
 ```
 
-The 5 hooks and their arguments:
+The 6 authorization hooks and their arguments:
 
 | Hook | Arguments | Used in |
 |------|-----------|---------|
@@ -187,6 +234,14 @@ The 5 hooks and their arguments:
 | `authorize_run_create` | `(run_params, socket)` | New run form |
 | `authorize_run_control` | `(action, socket)` | Run show (stop, toggle, reply) |
 | `authorize_remote_action` | `(action, socket)` | Home page action dispatch |
+| `authorize_webhook` | `(event, payload)` | `PyreWeb.WebhookController` |
+
+PyreWeb.Config also provides 2 persistence callbacks for GitHub App credentials:
+
+| Callback | Arguments | Description |
+|----------|-----------|-------------|
+| `store_github_app` | `(credentials)` | Persist GitHub App credentials after setup |
+| `load_github_app` | `()` | Load stored credentials (returns map or nil) |
 
 All callbacks return `:ok | {:error, term()}`. Defaults permit all operations.
 Exceptions in callbacks are rescued and return `:ok` (fail-open) to avoid

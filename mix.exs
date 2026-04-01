@@ -30,7 +30,7 @@ defmodule PyreWeb.MixProject do
       {:phoenix_live_view, "~> 1.0"},
       {:jason, "~> 1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
-      {:pyre_web, path: "../pyre_web", only: :test}
+      {:pyre, path: "../pyre_core", only: :test}
     ]
   end
 

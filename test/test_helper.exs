@@ -25,6 +25,12 @@ end
 defmodule PyreWeb.Test.Endpoint do
   use Phoenix.Endpoint, otp_app: :pyre_web
 
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Jason,
+    body_reader: {PyreWeb.WebhookPlug, :read_body, []}
+
   plug Plug.Session,
     store: :cookie,
     key: "_pyre_web_key",
@@ -34,11 +40,13 @@ defmodule PyreWeb.Test.Endpoint do
 end
 
 # Pyre application auto-starts Registry, DynamicSupervisor, and
-# Jido starts its TaskSupervisor. We only need PubSub and the endpoint.
+# Jido starts its TaskSupervisor. We start PubSub, Presence, ReviewQueue,
+# and the test endpoint here since pyre_web is a library (no Application).
 Supervisor.start_link(
   [
     {Phoenix.PubSub, name: PyreWeb.Test.PubSub},
     PyreWeb.Presence,
+    PyreWeb.ReviewQueue,
     PyreWeb.Test.Endpoint
   ],
   strategy: :one_for_one

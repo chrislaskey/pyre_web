@@ -1,6 +1,6 @@
 defmodule PyreWeb.Config do
   @moduledoc """
-  Behaviour and default configuration for PyreWeb authorization hooks.
+  Behaviour and default configuration for PyreWeb hooks.
 
   Applications can provide a custom config module by:
 
@@ -11,7 +11,7 @@ defmodule PyreWeb.Config do
          config :pyre_web, config: MyApp.PyreWebConfig
 
   If no config module is set, `PyreWeb.Config` itself provides the default
-  implementations for all callbacks (permit all).
+  implementations for all callbacks (permit all / no-op).
 
   ## Example
 
@@ -25,6 +25,16 @@ defmodule PyreWeb.Config do
             _token -> :ok
           end
         end
+
+        @impl true
+        def store_github_app(credentials) do
+          MyApp.Repo.insert_or_update_github_app(credentials)
+        end
+
+        @impl true
+        def load_github_app do
+          MyApp.Repo.get_github_app()
+        end
       end
 
   Any callback not overridden in the custom module will fall back to the
@@ -33,13 +43,14 @@ defmodule PyreWeb.Config do
   ## Dispatching
 
   Use `PyreWeb.Config.authorize/2` to dispatch authorization checks.
+  Use `PyreWeb.Config.call/2` to dispatch data-returning callbacks.
   Exceptions raised inside user-provided callbacks are rescued and logged —
-  they return `:ok` (fail-open) to avoid locking users out when a hook crashes.
+  authorization returns `:ok` (fail-open), data callbacks return `nil`.
   """
 
   require Logger
 
-  # -- Callbacks --
+  # -- Authorization Callbacks --
 
   @callback authorize_socket_connect(params :: map(), connect_info :: map()) ::
               :ok | {:error, term()}
@@ -55,6 +66,40 @@ defmodule PyreWeb.Config do
 
   @callback authorize_remote_action(action :: map(), socket :: Phoenix.LiveView.Socket.t()) ::
               :ok | {:error, term()}
+
+  @callback authorize_webhook(event :: String.t(), payload :: map()) ::
+              :ok | {:error, term()}
+
+  # -- GitHub App Persistence Callbacks --
+
+  @doc """
+  Called after the GitHub App manifest flow to store App credentials.
+
+  The `credentials` map contains:
+
+    * `:app_id` - GitHub App ID (string)
+    * `:private_key` - PEM-encoded RSA private key
+    * `:webhook_secret` - Webhook HMAC secret
+    * `:client_id` - OAuth client ID
+    * `:client_secret` - OAuth client secret
+    * `:bot_slug` - App slug (used for @mention detection)
+    * `:html_url` - URL of the App on GitHub
+
+  Default implementation: no-op (returns `:ok`). Override in consuming apps
+  to persist credentials to a database.
+  """
+  @callback store_github_app(credentials :: map()) :: :ok | {:error, term()}
+
+  @doc """
+  Loads stored GitHub App credentials.
+
+  Should return a map with the same keys as `store_github_app/1`,
+  or `nil` if no credentials are stored.
+
+  Default implementation: returns `nil`. Override in consuming apps
+  to load credentials from a database.
+  """
+  @callback load_github_app() :: map() | nil
 
   # -- Public API --
 
@@ -88,6 +133,25 @@ defmodule PyreWeb.Config do
     end
   end
 
+  @doc """
+  Dispatches a data-returning callback to the configured config module.
+
+  Returns whatever the callback returns. Rescues any exception and returns
+  `nil` with a logged warning.
+  """
+  @spec call(atom(), list()) :: term()
+  def call(hook, args) do
+    mod = get_module()
+
+    try do
+      apply(mod, hook, args)
+    rescue
+      e ->
+        Logger.warning("PyreWeb.Config hook #{hook} raised: #{Exception.message(e)}")
+        nil
+    end
+  end
+
   # -- __using__ macro --
 
   defmacro __using__(_opts) do
@@ -104,12 +168,21 @@ defmodule PyreWeb.Config do
       def authorize_run_control(_action, _socket), do: :ok
       @impl PyreWeb.Config
       def authorize_remote_action(_action, _socket), do: :ok
+      @impl PyreWeb.Config
+      def authorize_webhook(_event, _payload), do: :ok
+      @impl PyreWeb.Config
+      def store_github_app(_credentials), do: :ok
+      @impl PyreWeb.Config
+      def load_github_app, do: nil
 
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
                      authorize_run_create: 2,
                      authorize_run_control: 2,
-                     authorize_remote_action: 2
+                     authorize_remote_action: 2,
+                     authorize_webhook: 2,
+                     store_github_app: 1,
+                     load_github_app: 0
     end
   end
 
@@ -120,4 +193,7 @@ defmodule PyreWeb.Config do
   def authorize_run_create(_run_params, _socket), do: :ok
   def authorize_run_control(_action, _socket), do: :ok
   def authorize_remote_action(_action, _socket), do: :ok
+  def authorize_webhook(_event, _payload), do: :ok
+  def store_github_app(_credentials), do: :ok
+  def load_github_app, do: nil
 end

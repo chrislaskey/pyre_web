@@ -34,6 +34,47 @@ defmodule PyreWeb.ConfigTest do
       Application.delete_env(:pyre_web, :config)
       assert :ok = PyreWeb.Config.authorize(:authorize_remote_action, [%{}, %{}])
     end
+
+    test "returns :ok for authorize_webhook" do
+      Application.delete_env(:pyre_web, :config)
+      assert :ok = PyreWeb.Config.authorize(:authorize_webhook, ["issue_comment", %{}])
+    end
+  end
+
+  describe "call/2 with defaults" do
+    test "store_github_app returns :ok" do
+      Application.delete_env(:pyre_web, :config)
+      assert :ok = PyreWeb.Config.call(:store_github_app, [%{app_id: "123"}])
+    end
+
+    test "load_github_app returns nil" do
+      Application.delete_env(:pyre_web, :config)
+      assert nil == PyreWeb.Config.call(:load_github_app, [])
+    end
+  end
+
+  describe "call/2 with custom module" do
+    test "dispatches store_github_app to configured module" do
+      Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
+      assert :ok = PyreWeb.Config.call(:store_github_app, [%{app_id: "123"}])
+    end
+
+    test "dispatches load_github_app to configured module" do
+      Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
+      result = PyreWeb.Config.call(:load_github_app, [])
+      assert %{app_id: "test-app"} = result
+    end
+
+    test "rescues exception and returns nil" do
+      Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.DataCrasher)
+
+      log =
+        capture_log(fn ->
+          assert nil == PyreWeb.Config.call(:load_github_app, [])
+        end)
+
+      assert log =~ "PyreWeb.Config hook load_github_app raised"
+    end
   end
 
   describe "authorize/2 with custom module" do
@@ -63,6 +104,9 @@ defmodule PyreWeb.ConfigTest do
 
       assert {:error, :unauthorized} =
                PyreWeb.Config.authorize(:authorize_remote_action, [%{}, %{}])
+
+      assert {:error, :unauthorized} =
+               PyreWeb.Config.authorize(:authorize_webhook, ["event", %{}])
     end
   end
 
@@ -81,7 +125,7 @@ defmodule PyreWeb.ConfigTest do
   end
 
   describe "__using__ macro" do
-    test "produces all 5 overridable callbacks with default :ok" do
+    test "produces all overridable callbacks with defaults" do
       mod = PyreWeb.ConfigTest.AllowAll
 
       assert :ok = mod.authorize_socket_connect(%{}, %{})
@@ -89,6 +133,9 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = mod.authorize_run_create(%{}, %{})
       assert :ok = mod.authorize_run_control(%{}, %{})
       assert :ok = mod.authorize_remote_action(%{}, %{})
+      assert :ok = mod.authorize_webhook("event", %{})
+      assert :ok = mod.store_github_app(%{})
+      assert nil == mod.load_github_app()
     end
 
     test "allows overriding individual callbacks" do
@@ -131,6 +178,18 @@ defmodule PyreWeb.ConfigTest do
     def authorize_run_control(_action, _socket), do: {:error, :unauthorized}
     @impl true
     def authorize_remote_action(_action, _socket), do: {:error, :unauthorized}
+    @impl true
+    def authorize_webhook(_event, _payload), do: {:error, :unauthorized}
+  end
+
+  defmodule WithGitHub do
+    use PyreWeb.Config
+
+    @impl true
+    def store_github_app(_credentials), do: :ok
+
+    @impl true
+    def load_github_app, do: %{app_id: "test-app", bot_slug: "test-bot"}
   end
 
   defmodule Crasher do
@@ -138,5 +197,12 @@ defmodule PyreWeb.ConfigTest do
 
     @impl true
     def authorize_socket_connect(_params, _connect_info), do: raise("boom")
+  end
+
+  defmodule DataCrasher do
+    use PyreWeb.Config
+
+    @impl true
+    def load_github_app, do: raise("data boom")
   end
 end

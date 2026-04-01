@@ -43,7 +43,7 @@ defmodule PyreWeb.Router do
         {session_name, session_opts, route_opts} =
           PyreWeb.Router.__options__(opts)
 
-        import Phoenix.Router, only: [get: 4]
+        import Phoenix.Router, only: [get: 4, post: 4]
         import Phoenix.LiveView.Router, only: [live: 4, live_session: 3]
 
         live_session session_name, session_opts do
@@ -56,7 +56,15 @@ defmodule PyreWeb.Router do
           live "/runs", PyreWeb.RunListLive, :index, route_opts
           live "/runs/new", PyreWeb.RunNewLive, :new, route_opts
           live "/runs/:id", PyreWeb.RunShowLive, :show, route_opts
+
+          live "/github/setup", PyreWeb.GitHubSetupLive, :setup, route_opts
         end
+
+        get "/github/callback", PyreWeb.GitHubCallbackController, :callback,
+          as: :pyre_github_callback
+
+        post "/webhooks/github", PyreWeb.WebhookController, :github,
+          as: :pyre_webhook
       end
 
       unless Module.get_attribute(__MODULE__, :pyre_web_prefix) do
