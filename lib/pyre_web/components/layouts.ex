@@ -90,7 +90,7 @@ defmodule PyreWeb.Components.Layouts do
 
   def page_header(assigns) do
     ~H"""
-    <div class="w-full h-16 px-6 items-center flex justify-between shadow-sm relative z-10">
+    <.page_header_container>
       <div class="flex items-center gap-x-2">
         <.link
           patch={toggle_menu_path(@uri)}
@@ -113,9 +113,7 @@ defmodule PyreWeb.Components.Layouts do
             />
           </svg>
         </.link>
-        <.link class="w-48 tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
-          Pyre
-        </.link>
+        <.page_header_logo prefix={@prefix} />
       </div>
       <div class="flex items-center gap-x-1">
         <.notification_bell />
@@ -163,6 +161,26 @@ defmodule PyreWeb.Components.Layouts do
           </svg>
         </.link>
       </div>
+    </.page_header_container>
+    """
+  end
+
+  attr :prefix, :string, required: true
+
+  def page_header_logo(assigns) do
+    ~H"""
+    <.link class="w-48 tracking-widest text-2xl font-light uppercase" navigate={@prefix}>
+      Pyre
+    </.link>
+    """
+  end
+
+  slot :inner_block, required: true
+
+  def page_header_container(assigns) do
+    ~H"""
+    <div class="w-full h-16 px-6 items-center flex justify-between shadow-sm relative z-10">
+      {render_slot(@inner_block)}
     </div>
     """
   end
