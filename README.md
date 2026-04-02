@@ -69,7 +69,7 @@ behaviour can be overwritten by creating a custom module and defining callback f
 You can use the same module for both `Pyre.Config` and `PyreWeb.Config`:
 
 ```elixir
-defmodule MyApp.PyreConfig do
+defmodule MyApp.Pyre.Config do
   use Pyre.Config
   use PyreWeb.Config
 
@@ -97,7 +97,7 @@ Then register it in your config:
 
 ```elixir
 # config/config.exs
-config :pyre, config: MyApp.PyreConfig
+config :pyre, config: MyApp.Pyre.Config
 ```
 
 Any callback not overridden returns `:ok` by default. Exceptions in callbacks
@@ -173,7 +173,7 @@ config :pyre, :github_apps, [
 ]
 ```
 
-4. Implement the `update_github_app/1` and `get_github_app/0` callbacks in your
+4. Implement the `update_github_app/1` and `list_github_apps/0` callbacks in your
    config module to persist the App credentials (see [Authorization Hooks](#authorization-hooks))
 
 ### Pages
@@ -236,7 +236,7 @@ dispatch, and webhook processing. Create a module that `use PyreWeb.Config`
 and override the callbacks you need:
 
 ```elixir
-defmodule MyApp.PyreConfig do
+defmodule MyApp.Pyre.Config do
   use Pyre.Config
   use PyreWeb.Config
 
@@ -271,8 +271,7 @@ PyreWeb):
 
 ```elixir
 # config/config.exs
-config :pyre, config: MyApp.PyreConfig
-config :pyre_web, config: MyApp.PyreConfig
+config :pyre, config: MyApp.Pyre.Config
 ```
 
 The 6 authorization hooks and their arguments:
@@ -291,7 +290,6 @@ PyreWeb.Config also provides persistence callbacks for GitHub App credentials:
 | Callback | Arguments | Description |
 |----------|-----------|-------------|
 | `update_github_app` | `(credentials)` | Persist GitHub App credentials after setup |
-| `get_github_app` | `()` | Load stored credentials (returns map or nil) |
 | `list_github_apps` | `()` | Load all configured GitHub Apps (returns list of maps) |
 
 All callbacks return `:ok | {:error, term()}`. Defaults permit all operations.

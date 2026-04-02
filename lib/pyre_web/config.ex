@@ -32,11 +32,6 @@ defmodule PyreWeb.Config do
         end
 
         @impl true
-        def get_github_app do
-          MyApp.Repo.get_github_app()
-        end
-
-        @impl true
         def list_github_apps do
           MyApp.Repo.list_github_apps()
         end
@@ -94,20 +89,6 @@ defmodule PyreWeb.Config do
   to persist credentials to a database.
   """
   @callback update_github_app(credentials :: map()) :: :ok | {:error, term()}
-
-  @doc """
-  Loads stored GitHub App credentials.
-
-  Should return a map with the same keys as `update_github_app/1`,
-  or `nil` if no credentials are stored.
-
-  Default implementation: reads the first entry from
-  `config :pyre, :github_apps` (a list of keyword lists / maps).
-  Returns `nil` if no credentials are found.
-
-  Override in consuming apps to load credentials from a database.
-  """
-  @callback get_github_app() :: map() | nil
 
   @doc """
   Returns all configured GitHub Apps.
@@ -194,8 +175,6 @@ defmodule PyreWeb.Config do
       @impl PyreWeb.Config
       def update_github_app(_credentials), do: :ok
       @impl PyreWeb.Config
-      def get_github_app, do: PyreWeb.Config.get_github_app_from_env()
-      @impl PyreWeb.Config
       def list_github_apps, do: PyreWeb.Config.list_github_apps_from_env()
 
       defoverridable authorize_socket_connect: 2,
@@ -205,7 +184,6 @@ defmodule PyreWeb.Config do
                      authorize_remote_action: 2,
                      authorize_webhook: 2,
                      update_github_app: 1,
-                     get_github_app: 0,
                      list_github_apps: 0
     end
   end
@@ -219,16 +197,7 @@ defmodule PyreWeb.Config do
   def authorize_remote_action(_action, _socket), do: :ok
   def authorize_webhook(_event, _payload), do: :ok
   def update_github_app(_credentials), do: :ok
-  def get_github_app, do: get_github_app_from_env()
   def list_github_apps, do: list_github_apps_from_env()
-
-  @doc false
-  def get_github_app_from_env do
-    case list_github_apps_from_env() do
-      [first | _] -> first
-      [] -> nil
-    end
-  end
 
   @doc false
   def list_github_apps_from_env do

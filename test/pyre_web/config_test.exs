@@ -59,9 +59,9 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = PyreWeb.Config.call(:update_github_app, [%{app_id: "123"}])
     end
 
-    test "get_github_app returns nil" do
+    test "list_github_apps returns empty list" do
       Application.delete_env(:pyre_web, :config)
-      assert nil == PyreWeb.Config.call(:get_github_app, [])
+      assert [] == PyreWeb.Config.call(:list_github_apps, [])
     end
   end
 
@@ -71,10 +71,10 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = PyreWeb.Config.call(:update_github_app, [%{app_id: "123"}])
     end
 
-    test "dispatches get_github_app to configured module" do
+    test "dispatches list_github_apps to configured module" do
       Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
-      result = PyreWeb.Config.call(:get_github_app, [])
-      assert %{app_id: "test-app"} = result
+      result = PyreWeb.Config.call(:list_github_apps, [])
+      assert [%{app_id: "test-app"}] = result
     end
 
     test "rescues exception and returns nil" do
@@ -82,10 +82,10 @@ defmodule PyreWeb.ConfigTest do
 
       log =
         capture_log(fn ->
-          assert nil == PyreWeb.Config.call(:get_github_app, [])
+          assert nil == PyreWeb.Config.call(:list_github_apps, [])
         end)
 
-      assert log =~ "PyreWeb.Config hook get_github_app raised"
+      assert log =~ "PyreWeb.Config hook list_github_apps raised"
     end
   end
 
@@ -157,18 +157,6 @@ defmodule PyreWeb.ConfigTest do
       assert Enum.at(result, 1) == %{app_id: "222", webhook_secret: "sec2", bot_slug: "bot2"}
     end
 
-    test "get_github_app returns first app from list" do
-      Application.delete_env(:pyre_web, :config)
-
-      Application.put_env(:pyre, :github_apps, [
-        [app_id: "first", bot_slug: "bot1"],
-        [app_id: "second", bot_slug: "bot2"]
-      ])
-
-      result = PyreWeb.Config.call(:get_github_app, [])
-      assert %{app_id: "first", bot_slug: "bot1"} = result
-    end
-
     test "dispatches list_github_apps to custom module" do
       Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
       result = PyreWeb.Config.call(:list_github_apps, [])
@@ -187,7 +175,6 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = mod.authorize_remote_action(%{}, %{})
       assert :ok = mod.authorize_webhook("event", %{})
       assert :ok = mod.update_github_app(%{})
-      assert nil == mod.get_github_app()
       assert [] == mod.list_github_apps()
     end
 
@@ -242,9 +229,6 @@ defmodule PyreWeb.ConfigTest do
     def update_github_app(_credentials), do: :ok
 
     @impl true
-    def get_github_app, do: %{app_id: "test-app", bot_slug: "test-bot"}
-
-    @impl true
     def list_github_apps, do: [%{app_id: "test-app", bot_slug: "test-bot"}]
   end
 
@@ -259,6 +243,6 @@ defmodule PyreWeb.ConfigTest do
     use PyreWeb.Config
 
     @impl true
-    def get_github_app, do: raise("data boom")
+    def list_github_apps, do: raise("data boom")
   end
 end
