@@ -133,7 +133,7 @@ PyreWeb supports using multiple remote macOS hosts as runners. This lets you lev
 
 > The [Pyre Native App](https://github.com/chrislaskey/pyre_native) repository
 
-### GitHub App PR Reviews
+#### (Optional) GitHub App
 
 PyreWeb supports `@mention`-triggered PR reviews via a GitHub App. When someone
 comments `@your-bot review` on a pull request, the webhook controller parses the
@@ -142,7 +142,7 @@ pyre_core.
 
 **Flow**: Webhook → `WebhookController` (verify HMAC + parse) → `PyreWeb.MentionParser` → `PyreWeb.ReviewQueue` (rate-limited, bounded concurrency) → `Pyre.RemoteReview.run/1`
 
-#### Supported commands
+##### Supported commands
 
 | Command | Example | Description |
 |---------|---------|-------------|
@@ -153,17 +153,24 @@ pyre_core.
 
 Mentions inside code blocks or blockquotes are ignored.
 
-#### Setup
+##### Setup
 
 1. Add `PyreWeb.ReviewQueue` to your supervision tree (see [Supervision tree](#supervision-tree))
 2. Visit `/pyre/settings/github-apps/new` to register a GitHub App via manifest flow
-3. Configure the webhook secret and bot slug:
+3. Configure the webhook secret and bot slug and update `config/runtime.exs`:
 
 ```elixir
 # config/runtime.exs
-config :pyre, :github_app,
-  webhook_secret: System.get_env("GITHUB_WEBHOOK_SECRET"),
-  bot_slug: System.get_env("GITHUB_BOT_SLUG")
+config :pyre, :github_apps, [
+  if System.get_env("PYRE_GITHUB_APP_ID") do
+    [
+      app_id: System.get_env("PYRE_GITHUB_APP_ID"),
+      private_key: System.get_env("PYRE_GITHUB_APP_PRIVATE_KEY"),
+      webhook_secret: System.get_env("PYRE_GITHUB_WEBHOOK_SECRET"),
+      bot_slug: System.get_env("PYRE_GITHUB_APP_BOT_SLUG")
+    ]
+  end
+]
 ```
 
 4. Implement the `update_github_app/1` and `get_github_app/0` callbacks in your
@@ -279,12 +286,13 @@ The 6 authorization hooks and their arguments:
 | `authorize_remote_action` | `(action, socket)` | Home page action dispatch |
 | `authorize_webhook` | `(event, payload)` | `PyreWeb.WebhookController` |
 
-PyreWeb.Config also provides 2 persistence callbacks for GitHub App credentials:
+PyreWeb.Config also provides persistence callbacks for GitHub App credentials:
 
 | Callback | Arguments | Description |
 |----------|-----------|-------------|
 | `update_github_app` | `(credentials)` | Persist GitHub App credentials after setup |
 | `get_github_app` | `()` | Load stored credentials (returns map or nil) |
+| `list_github_apps` | `()` | Load all configured GitHub Apps (returns list of maps) |
 
 All callbacks return `:ok | {:error, term()}`. Defaults permit all operations.
 Exceptions in callbacks are rescued and return `:ok` (fail-open) to avoid

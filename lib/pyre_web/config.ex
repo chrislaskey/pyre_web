@@ -35,6 +35,11 @@ defmodule PyreWeb.Config do
         def get_github_app do
           MyApp.Repo.get_github_app()
         end
+
+        @impl true
+        def list_github_apps do
+          MyApp.Repo.list_github_apps()
+        end
       end
 
   Any callback not overridden in the custom module will fall back to the
@@ -96,14 +101,26 @@ defmodule PyreWeb.Config do
   Should return a map with the same keys as `update_github_app/1`,
   or `nil` if no credentials are stored.
 
-  Default implementation: reads from environment variables
-  (`GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`,
-  `GITHUB_APP_BOT_SLUG`) and falls back to `config :pyre, :github_app`.
+  Default implementation: reads the first entry from
+  `config :pyre, :github_apps` (a list of keyword lists / maps).
   Returns `nil` if no credentials are found.
 
   Override in consuming apps to load credentials from a database.
   """
   @callback get_github_app() :: map() | nil
+
+  @doc """
+  Returns all configured GitHub Apps.
+
+  Should return a list of maps, each with the same keys as
+  `update_github_app/1`.
+
+  Default implementation: reads from `config :pyre, :github_apps`
+  and normalizes each entry to a map.
+
+  Override in consuming apps to load from a database.
+  """
+  @callback list_github_apps() :: [map()]
 
   # -- Public API --
 
@@ -178,6 +195,8 @@ defmodule PyreWeb.Config do
       def update_github_app(_credentials), do: :ok
       @impl PyreWeb.Config
       def get_github_app, do: PyreWeb.Config.get_github_app_from_env()
+      @impl PyreWeb.Config
+      def list_github_apps, do: PyreWeb.Config.list_github_apps_from_env()
 
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
@@ -186,7 +205,8 @@ defmodule PyreWeb.Config do
                      authorize_remote_action: 2,
                      authorize_webhook: 2,
                      update_github_app: 1,
-                     get_github_app: 0
+                     get_github_app: 0,
+                     list_github_apps: 0
     end
   end
 
@@ -200,24 +220,29 @@ defmodule PyreWeb.Config do
   def authorize_webhook(_event, _payload), do: :ok
   def update_github_app(_credentials), do: :ok
   def get_github_app, do: get_github_app_from_env()
+  def list_github_apps, do: list_github_apps_from_env()
 
   @doc false
   def get_github_app_from_env do
-    env_config = %{
-      app_id: System.get_env("GITHUB_APP_ID"),
-      private_key: System.get_env("GITHUB_APP_PRIVATE_KEY"),
-      webhook_secret: System.get_env("GITHUB_WEBHOOK_SECRET"),
-      bot_slug: System.get_env("GITHUB_APP_BOT_SLUG")
-    }
+    case list_github_apps_from_env() do
+      [first | _] -> first
+      [] -> nil
+    end
+  end
 
-    if env_config.app_id do
-      env_config
-    else
-      case Application.get_env(:pyre, :github_app) do
-        nil -> nil
-        config when is_list(config) -> Map.new(config)
-        config when is_map(config) -> config
-      end
+  @doc false
+  def list_github_apps_from_env do
+    case Application.get_env(:pyre, :github_apps) do
+      nil ->
+        []
+
+      apps when is_list(apps) ->
+        apps
+        |> Enum.reject(&is_nil/1)
+        |> Enum.map(fn
+          entry when is_list(entry) -> Map.new(entry)
+          entry when is_map(entry) -> entry
+        end)
     end
   end
 end

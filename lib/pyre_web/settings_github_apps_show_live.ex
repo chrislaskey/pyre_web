@@ -86,8 +86,16 @@ defmodule PyreWeb.SettingsGithubAppsShowLive do
 
   defp github_app_full_config do
     case PyreWeb.Config.call(:get_github_app, []) do
-      config when is_map(config) and map_size(config) > 0 -> config
-      _ -> Application.get_env(:pyre, :github_app, [])
+      config when is_map(config) and map_size(config) > 0 ->
+        config
+
+      _ ->
+        Application.get_env(:pyre, :github_apps, [])
+        |> List.first([])
+        |> then(fn
+          entry when is_list(entry) -> Map.new(entry)
+          entry when is_map(entry) -> entry
+        end)
     end
   end
 end

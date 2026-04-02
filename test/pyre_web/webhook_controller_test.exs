@@ -5,22 +5,24 @@ defmodule PyreWeb.WebhookControllerTest do
 
   setup do
     previous_config = Application.get_env(:pyre_web, :config)
-    previous_github = Application.get_env(:pyre, :github_app)
+    previous_github_apps = Application.get_env(:pyre, :github_apps)
 
-    Application.put_env(:pyre, :github_app,
-      app_id: "12345",
-      private_key: "test-key",
-      webhook_secret: @webhook_secret,
-      bot_slug: "pyre-test-bot"
-    )
+    Application.put_env(:pyre, :github_apps, [
+      [
+        app_id: "12345",
+        private_key: "test-key",
+        webhook_secret: @webhook_secret,
+        bot_slug: "pyre-test-bot"
+      ]
+    ])
 
     on_exit(fn ->
       Application.put_env(:pyre_web, :config, previous_config)
 
-      if previous_github do
-        Application.put_env(:pyre, :github_app, previous_github)
+      if previous_github_apps do
+        Application.put_env(:pyre, :github_apps, previous_github_apps)
       else
-        Application.delete_env(:pyre, :github_app)
+        Application.delete_env(:pyre, :github_apps)
       end
     end)
 
@@ -58,7 +60,7 @@ defmodule PyreWeb.WebhookControllerTest do
     end
 
     test "skips verification when no secret configured", %{conn: conn} do
-      Application.put_env(:pyre, :github_app, app_id: "12345", private_key: "test-key")
+      Application.put_env(:pyre, :github_apps, [[app_id: "12345", private_key: "test-key"]])
 
       payload = Jason.encode!(%{"action" => "created"})
 
@@ -70,6 +72,48 @@ defmodule PyreWeb.WebhookControllerTest do
         |> post("/pyre/webhooks/github", Jason.decode!(payload))
 
       assert json_response(conn, 200) == %{"status" => "accepted"}
+    end
+  end
+
+  describe "multi-app signature verification" do
+    test "accepts when second app's secret matches", %{conn: conn} do
+      Application.put_env(:pyre, :github_apps, [
+        [app_id: "11111", webhook_secret: "wrong_secret", bot_slug: "bot1"],
+        [app_id: "22222", webhook_secret: @webhook_secret, bot_slug: "bot2"]
+      ])
+
+      payload = Jason.encode!(%{"action" => "created"})
+      signature = compute_signature(payload)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("x-github-event", "ping")
+        |> put_req_header("x-hub-signature-256", signature)
+        |> put_private(:raw_body, payload)
+        |> post("/pyre/webhooks/github", Jason.decode!(payload))
+
+      assert json_response(conn, 200) == %{"status" => "accepted"}
+    end
+
+    test "rejects when no app secret matches", %{conn: conn} do
+      Application.put_env(:pyre, :github_apps, [
+        [app_id: "11111", webhook_secret: "wrong1", bot_slug: "bot1"],
+        [app_id: "22222", webhook_secret: "wrong2", bot_slug: "bot2"]
+      ])
+
+      payload = Jason.encode!(%{"action" => "created"})
+      signature = compute_signature(payload)
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/json")
+        |> put_req_header("x-github-event", "ping")
+        |> put_req_header("x-hub-signature-256", signature)
+        |> put_private(:raw_body, payload)
+        |> post("/pyre/webhooks/github", Jason.decode!(payload))
+
+      assert json_response(conn, 401) == %{"error" => "invalid signature"}
     end
   end
 

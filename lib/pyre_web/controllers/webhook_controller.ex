@@ -32,21 +32,23 @@ defmodule PyreWeb.WebhookController do
   # --- Signature verification ---
 
   defp verify_signature(conn, raw_body) do
-    secret = github_app_config(:webhook_secret)
+    apps = list_github_apps()
+    secrets = apps |> Enum.map(& &1[:webhook_secret]) |> Enum.filter(& &1)
 
-    if secret do
-      signature = get_req_header(conn, "x-hub-signature-256") |> List.first() || ""
-      expected_mac = :crypto.mac(:hmac, :sha256, secret, raw_body)
-      expected = "sha256=" <> Base.encode16(expected_mac, case: :lower)
-
-      if Plug.Crypto.secure_compare(signature, expected) do
-        :ok
-      else
-        {:error, :invalid_signature}
-      end
-    else
+    if secrets == [] do
       Logger.warning("GitHub webhook secret not configured — skipping signature verification")
       :ok
+    else
+      signature = get_req_header(conn, "x-hub-signature-256") |> List.first() || ""
+
+      match =
+        Enum.any?(secrets, fn secret ->
+          expected_mac = :crypto.mac(:hmac, :sha256, secret, raw_body)
+          expected = "sha256=" <> Base.encode16(expected_mac, case: :lower)
+          Plug.Crypto.secure_compare(signature, expected)
+        end)
+
+      if match, do: :ok, else: {:error, :invalid_signature}
     end
   end
 
@@ -75,20 +77,23 @@ defmodule PyreWeb.WebhookController do
   # --- @Mention handling ---
 
   defp handle_mention(payload, comment_type) do
-    bot_slug = github_app_config(:bot_slug)
+    apps = list_github_apps()
+    bot_slugs = apps |> Enum.map(& &1[:bot_slug]) |> Enum.filter(& &1)
 
-    unless bot_slug do
+    if bot_slugs == [] do
       Logger.warning("GitHub App bot_slug not configured — cannot detect @mentions")
     else
       body = payload["comment"]["body"] || ""
 
-      case PyreWeb.MentionParser.parse(body, bot_slug) do
-        {:ok, command} ->
-          dispatch_command(command, payload, comment_type)
+      Enum.find_value(bot_slugs, :ok, fn slug ->
+        case PyreWeb.MentionParser.parse(body, slug) do
+          {:ok, command} ->
+            dispatch_command(command, payload, comment_type)
 
-        :ignore ->
-          :ok
-      end
+          :ignore ->
+            nil
+        end
+      end)
     end
   end
 
@@ -165,19 +170,7 @@ defmodule PyreWeb.WebhookController do
 
   # --- Config helpers ---
 
-  defp github_app_config(key) do
-    case PyreWeb.Config.call(:get_github_app, []) do
-      config when is_map(config) and map_size(config) > 0 ->
-        Map.get(config, key)
-
-      _ ->
-        app_env = Application.get_env(:pyre, :github_app, [])
-
-        if is_list(app_env) do
-          Keyword.get(app_env, key)
-        else
-          Map.get(app_env, key)
-        end
-    end
+  defp list_github_apps do
+    PyreWeb.Config.call(:list_github_apps, []) || []
   end
 end

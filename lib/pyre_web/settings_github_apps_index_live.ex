@@ -6,21 +6,19 @@ defmodule PyreWeb.SettingsGithubAppsIndexLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    config = PyreWeb.Config.call(:get_github_app, [])
+    all_apps = PyreWeb.Config.call(:list_github_apps, []) || []
 
-    app =
-      if is_map(config) and config[:app_id] do
+    apps =
+      Enum.map(all_apps, fn config ->
         %{
           app_id: config[:app_id],
           bot_slug: config[:bot_slug],
           webhook_secret_set: config[:webhook_secret] != nil,
           private_key_set: config[:private_key] != nil
         }
-      else
-        nil
-      end
+      end)
 
-    {:ok, assign(socket, page_title: "GitHub Apps", app: app)}
+    {:ok, assign(socket, page_title: "GitHub Apps", apps: apps)}
   end
 
   @impl true

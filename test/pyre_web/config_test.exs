@@ -5,7 +5,19 @@ defmodule PyreWeb.ConfigTest do
 
   setup do
     previous = Application.get_env(:pyre_web, :config)
-    on_exit(fn -> Application.put_env(:pyre_web, :config, previous) end)
+    previous_apps = Application.get_env(:pyre, :github_apps)
+
+    on_exit(fn ->
+      Application.put_env(:pyre_web, :config, previous)
+
+      if previous_apps do
+        Application.put_env(:pyre, :github_apps, previous_apps)
+      else
+        Application.delete_env(:pyre, :github_apps)
+      end
+    end)
+
+    Application.delete_env(:pyre, :github_apps)
     :ok
   end
 
@@ -124,6 +136,46 @@ defmodule PyreWeb.ConfigTest do
     end
   end
 
+  describe "list_github_apps" do
+    test "returns empty list when no config set" do
+      Application.delete_env(:pyre_web, :config)
+      Application.delete_env(:pyre, :github_apps)
+      assert [] == PyreWeb.Config.call(:list_github_apps, [])
+    end
+
+    test "returns normalized maps from keyword list config" do
+      Application.delete_env(:pyre_web, :config)
+
+      Application.put_env(:pyre, :github_apps, [
+        [app_id: "111", webhook_secret: "sec1", bot_slug: "bot1"],
+        [app_id: "222", webhook_secret: "sec2", bot_slug: "bot2"]
+      ])
+
+      result = PyreWeb.Config.call(:list_github_apps, [])
+      assert length(result) == 2
+      assert Enum.at(result, 0) == %{app_id: "111", webhook_secret: "sec1", bot_slug: "bot1"}
+      assert Enum.at(result, 1) == %{app_id: "222", webhook_secret: "sec2", bot_slug: "bot2"}
+    end
+
+    test "get_github_app returns first app from list" do
+      Application.delete_env(:pyre_web, :config)
+
+      Application.put_env(:pyre, :github_apps, [
+        [app_id: "first", bot_slug: "bot1"],
+        [app_id: "second", bot_slug: "bot2"]
+      ])
+
+      result = PyreWeb.Config.call(:get_github_app, [])
+      assert %{app_id: "first", bot_slug: "bot1"} = result
+    end
+
+    test "dispatches list_github_apps to custom module" do
+      Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithGitHub)
+      result = PyreWeb.Config.call(:list_github_apps, [])
+      assert [%{app_id: "test-app"}] = result
+    end
+  end
+
   describe "__using__ macro" do
     test "produces all overridable callbacks with defaults" do
       mod = PyreWeb.ConfigTest.AllowAll
@@ -136,6 +188,7 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = mod.authorize_webhook("event", %{})
       assert :ok = mod.update_github_app(%{})
       assert nil == mod.get_github_app()
+      assert [] == mod.list_github_apps()
     end
 
     test "allows overriding individual callbacks" do
@@ -190,6 +243,9 @@ defmodule PyreWeb.ConfigTest do
 
     @impl true
     def get_github_app, do: %{app_id: "test-app", bot_slug: "test-bot"}
+
+    @impl true
+    def list_github_apps, do: [%{app_id: "test-app", bot_slug: "test-bot"}]
   end
 
   defmodule Crasher do
