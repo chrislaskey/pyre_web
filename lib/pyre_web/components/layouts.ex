@@ -234,6 +234,7 @@ defmodule PyreWeb.Components.Layouts do
       </div>
       <div class="flex-1 overflow-y-auto py-6 px-3 bg-base-200 flex-1 border-t border-base-300">
         <.nav_links current_page={@current_page} prefix={@prefix} />
+        {PyreWeb.Config.call(:sidebar_footer, [assigns])}
       </div>
     </div>
     """
