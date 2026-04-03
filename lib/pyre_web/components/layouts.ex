@@ -92,27 +92,7 @@ defmodule PyreWeb.Components.Layouts do
     ~H"""
     <.page_header_container>
       <div class="flex items-center gap-x-2">
-        <.link
-          patch={toggle_menu_path(@uri)}
-          class="btn btn-ghost btn-sm btn-square flex md:hidden"
-          aria-label="Open menu"
-          title="Open menu"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="size-5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-            />
-          </svg>
-        </.link>
+        <.mobile_menu_button uri={@uri} />
         <.page_header_logo prefix={@prefix} />
       </div>
       <div class="flex items-center gap-x-1">
@@ -201,6 +181,34 @@ defmodule PyreWeb.Components.Layouts do
       </div>
       {PyreWeb.Config.call(:sidebar_footer, [assigns])}
     </nav>
+    """
+  end
+
+  attr :uri, :string, required: true
+
+  def mobile_menu_button(assigns) do
+    ~H"""
+    <.link
+      patch={toggle_menu_path(@uri)}
+      class="btn btn-ghost btn-sm btn-square flex md:hidden"
+      aria-label="Open menu"
+      title="Open menu"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="size-5"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+        />
+      </svg>
+    </.link>
     """
   end
 
