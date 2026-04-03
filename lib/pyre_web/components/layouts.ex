@@ -116,8 +116,6 @@ defmodule PyreWeb.Components.Layouts do
         <.page_header_logo prefix={@prefix} />
       </div>
       <div class="flex items-center gap-x-1">
-        <.notification_bell />
-        <.theme_selector />
         <.link
           patch={toggle_sidebar_path(@uri)}
           class="btn btn-ghost btn-sm btn-square hidden sm:flex"
@@ -160,6 +158,8 @@ defmodule PyreWeb.Components.Layouts do
             />
           </svg>
         </.link>
+        <.notification_bell />
+        <.theme_selector />
       </div>
     </.page_header_container>
     """
