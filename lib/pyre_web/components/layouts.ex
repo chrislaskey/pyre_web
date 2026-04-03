@@ -347,6 +347,7 @@ defmodule PyreWeb.Components.Layouts do
           Settings
         </.link>
       </li>
+      {PyreWeb.Config.call(:additional_nav_links, [assigns])}
     </ul>
     """
   end

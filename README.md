@@ -93,11 +93,13 @@ defmodule MyApp.Pyre.Config do
 end
 ```
 
-Then register it in your config:
+Then register it in your config. Each library reads its own application
+environment, so both entries are required:
 
 ```elixir
 # config/config.exs
 config :pyre, config: MyApp.Pyre.Config
+config :pyre_web, config: MyApp.Pyre.Config
 ```
 
 Any callback not overridden returns `:ok` by default. Exceptions in callbacks
@@ -267,11 +269,13 @@ end
 
 Then register the module in your config. Both libraries can share one module
 since the callback names don't overlap (`after_*` for Pyre, `authorize_*` for
-PyreWeb):
+PyreWeb). Each library reads its own application environment, so both entries
+are required:
 
 ```elixir
 # config/config.exs
 config :pyre, config: MyApp.Pyre.Config
+config :pyre_web, config: MyApp.Pyre.Config
 ```
 
 The 6 authorization hooks and their arguments:
@@ -292,9 +296,38 @@ PyreWeb.Config also provides persistence callbacks for GitHub App credentials:
 | `update_github_app` | `(credentials)` | Persist GitHub App credentials after setup |
 | `list_github_apps` | `()` | Load all configured GitHub Apps (returns list of maps) |
 
-All callbacks return `:ok | {:error, term()}`. Defaults permit all operations.
-Exceptions in callbacks are rescued and return `:ok` (fail-open) to avoid
-locking users out when a hook crashes.
+All authorization callbacks return `:ok | {:error, term()}`. Defaults permit
+all operations. Exceptions in callbacks are rescued and return `:ok`
+(fail-open) to avoid locking users out when a hook crashes.
+
+#### Render Hooks
+
+PyreWeb provides render callbacks that let your app inject custom HEEx markup
+into the dashboard UI:
+
+| Callback | Arguments | Description |
+|----------|-----------|-------------|
+| `sidebar_footer` | `(assigns)` | Renders content at the bottom of the sidebar |
+
+The `assigns` map includes `:current_page`, `:prefix`, and `:uri` from the
+sidebar component. The default implementation renders nothing.
+
+```elixir
+@impl PyreWeb.Config
+def sidebar_footer(assigns) do
+  import Phoenix.Component, only: [sigil_H: 2]
+
+  ~H"""
+  <div class="border-t border-base-300 pt-3 mt-3">
+    <ul class="menu w-full gap-y-1">
+      <li>
+        <a href="/admin">Admin</a>
+      </li>
+    </ul>
+  </div>
+  """
+end
+```
 
 ### Options
 

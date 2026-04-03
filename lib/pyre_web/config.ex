@@ -107,6 +107,19 @@ defmodule PyreWeb.Config do
   # -- Render Callbacks --
 
   @doc """
+  Returns HEEx markup to render additional items in the sidebar.
+
+  The `assigns` map includes `:current_page`, `:prefix`, and `:uri` from the
+  sidebar component.
+
+  Default implementation: renders nothing (empty HEEx).
+
+  Override in consuming apps to inject custom content (e.g. user info,
+  environment badge, version number).
+  """
+  @callback additional_nav_links(assigns :: map()) :: Phoenix.LiveView.Rendered.t()
+
+  @doc """
   Returns HEEx markup to render at the bottom of the sidebar.
 
   The `assigns` map includes `:current_page`, `:prefix`, and `:uri` from the
@@ -193,6 +206,8 @@ defmodule PyreWeb.Config do
       @impl PyreWeb.Config
       def list_github_apps, do: PyreWeb.Config.list_github_apps_from_env()
       @impl PyreWeb.Config
+      def additional_nav_links(var!(assigns)), do: ~H""
+      @impl PyreWeb.Config
       def sidebar_footer(var!(assigns)), do: ~H""
 
       defoverridable authorize_socket_connect: 2,
@@ -203,6 +218,7 @@ defmodule PyreWeb.Config do
                      authorize_webhook: 2,
                      update_github_app: 1,
                      list_github_apps: 0,
+                     additional_nav_links: 1,
                      sidebar_footer: 1
     end
   end
@@ -217,6 +233,7 @@ defmodule PyreWeb.Config do
   def authorize_webhook(_event, _payload), do: :ok
   def update_github_app(_credentials), do: :ok
   def list_github_apps, do: list_github_apps_from_env()
+  def additional_nav_links(assigns), do: ~H""
   def sidebar_footer(assigns), do: ~H""
 
   @doc false
