@@ -49,6 +49,7 @@ defmodule PyreWeb.Config do
   """
 
   require Logger
+  import Phoenix.Component, only: [sigil_H: 2]
 
   # -- Authorization Callbacks --
 
@@ -102,6 +103,21 @@ defmodule PyreWeb.Config do
   Override in consuming apps to load from a database.
   """
   @callback list_github_apps() :: [map()]
+
+  # -- Render Callbacks --
+
+  @doc """
+  Returns HEEx markup to render at the bottom of the sidebar.
+
+  The `assigns` map includes `:current_page`, `:prefix`, and `:uri` from the
+  sidebar component.
+
+  Default implementation: renders nothing (empty HEEx).
+
+  Override in consuming apps to inject custom content (e.g. user info,
+  environment badge, version number).
+  """
+  @callback sidebar_footer(assigns :: map()) :: Phoenix.LiveView.Rendered.t()
 
   # -- Public API --
 
@@ -176,6 +192,8 @@ defmodule PyreWeb.Config do
       def update_github_app(_credentials), do: :ok
       @impl PyreWeb.Config
       def list_github_apps, do: PyreWeb.Config.list_github_apps_from_env()
+      @impl PyreWeb.Config
+      def sidebar_footer(var!(assigns)), do: ~H""
 
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
@@ -184,7 +202,8 @@ defmodule PyreWeb.Config do
                      authorize_remote_action: 2,
                      authorize_webhook: 2,
                      update_github_app: 1,
-                     list_github_apps: 0
+                     list_github_apps: 0,
+                     sidebar_footer: 1
     end
   end
 
@@ -198,6 +217,7 @@ defmodule PyreWeb.Config do
   def authorize_webhook(_event, _payload), do: :ok
   def update_github_app(_credentials), do: :ok
   def list_github_apps, do: list_github_apps_from_env()
+  def sidebar_footer(assigns), do: ~H""
 
   @doc false
   def list_github_apps_from_env do

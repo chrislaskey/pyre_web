@@ -136,6 +136,32 @@ defmodule PyreWeb.ConfigTest do
     end
   end
 
+  describe "call/2 sidebar_footer" do
+    test "returns empty rendered by default" do
+      Application.delete_env(:pyre_web, :config)
+      result = PyreWeb.Config.call(:sidebar_footer, [%{}])
+      assert %Phoenix.LiveView.Rendered{} = result
+    end
+
+    test "dispatches to configured module" do
+      Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.WithSidebarFooter)
+      result = PyreWeb.Config.call(:sidebar_footer, [%{}])
+      assert %Phoenix.LiveView.Rendered{} = result
+      assert result.static |> Enum.join() =~ "Custom Footer"
+    end
+
+    test "returns nil on crash" do
+      Application.put_env(:pyre_web, :config, PyreWeb.ConfigTest.DataCrasher)
+
+      log =
+        capture_log(fn ->
+          assert nil == PyreWeb.Config.call(:sidebar_footer, [%{}])
+        end)
+
+      assert log =~ "PyreWeb.Config hook sidebar_footer raised"
+    end
+  end
+
   describe "list_github_apps" do
     test "returns empty list when no config set" do
       Application.delete_env(:pyre_web, :config)
@@ -176,6 +202,7 @@ defmodule PyreWeb.ConfigTest do
       assert :ok = mod.authorize_webhook("event", %{})
       assert :ok = mod.update_github_app(%{})
       assert [] == mod.list_github_apps()
+      assert %Phoenix.LiveView.Rendered{} = mod.sidebar_footer(%{})
     end
 
     test "allows overriding individual callbacks" do
@@ -239,10 +266,24 @@ defmodule PyreWeb.ConfigTest do
     def authorize_socket_connect(_params, _connect_info), do: raise("boom")
   end
 
+  defmodule WithSidebarFooter do
+    use PyreWeb.Config
+    import Phoenix.Component, only: [sigil_H: 2]
+
+    @impl true
+    def sidebar_footer(assigns) do
+      ~H"""
+      <div>Custom Footer</div>
+      """
+    end
+  end
+
   defmodule DataCrasher do
     use PyreWeb.Config
 
     @impl true
     def list_github_apps, do: raise("data boom")
+    @impl true
+    def sidebar_footer(_assigns), do: raise("sidebar boom")
   end
 end

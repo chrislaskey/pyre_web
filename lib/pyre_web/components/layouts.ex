@@ -193,12 +193,13 @@ defmodule PyreWeb.Components.Layouts do
     ~H"""
     <nav
       :if={!sidebar_collapsed?(@uri)}
-      class="hidden md:block w-56 shrink-0 bg-base-200 border-r border-base-300 py-5 px-3"
+      class="hidden md:flex md:flex-col w-56 shrink-0 bg-base-200 border-r border-base-300 py-5 px-3"
       style="min-height: calc(100vh - 4rem);"
     >
-      <div class="w-full">
+      <div class="w-full flex-1">
         <.nav_links current_page={@current_page} prefix={@prefix} />
       </div>
+      {PyreWeb.Config.call(:sidebar_footer, [assigns])}
     </nav>
     """
   end
