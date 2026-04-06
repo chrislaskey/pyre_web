@@ -74,7 +74,7 @@ defmodule PyreWeb.RunShowLive do
             interactive_stages: Map.get(run_state, :interactive_stages, MapSet.new()),
             waiting_for_input: Map.get(run_state, :waiting_for_input, false),
             waiting_phase: run_state.phase,
-            backend: Map.get(run_state, :backend, :other),
+            backend: Map.get(run_state, :backend, "other"),
             raw_session_ids: Map.get(run_state, :session_ids, %{}),
             session_ids: resolve_session_ids(Map.get(run_state, :session_ids, %{})),
             phases: phases,
@@ -309,7 +309,7 @@ defmodule PyreWeb.RunShowLive do
         </span>
       </div>
       <div class="p-4">
-        <%= if @backend in [:claude_cli, :cursor_cli] do %>
+        <%= if backend_supports_replies?(@backend) do %>
           <form phx-submit="send_reply" phx-change="update_reply">
             <textarea
               name="reply"
@@ -469,6 +469,21 @@ defmodule PyreWeb.RunShowLive do
       {phase, backend_id || pyre_id}
     end)
   end
+
+  defp backend_supports_replies?(backend_name) when is_binary(backend_name) do
+    backends = apply(Pyre.Config, :list_llm_backends, [])
+
+    case apply(Pyre.Config, :find_backend_by_name, [backends, backend_name]) do
+      {:ok, %{module: mod}} ->
+        Code.ensure_loaded?(mod) and function_exported?(mod, :manages_tool_loop?, 0) and
+          mod.manages_tool_loop?()
+
+      :error ->
+        false
+    end
+  end
+
+  defp backend_supports_replies?(_), do: false
 
   defp authorize_control(action, socket) do
     case PyreWeb.Config.authorize(:authorize_run_control, [action, socket]) do

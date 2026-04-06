@@ -15,13 +15,21 @@ defmodule PyreWeb.RunListLiveTest do
   end
 
   test "shows runs and links to show page", %{conn: conn} do
-    AgentMock.setup(["Req.", "Design.", "Impl.", "Tests.", "APPROVE\n\nGood."])
+    AgentMock.setup([
+      "Req.",
+      "Design.",
+      "Impl.",
+      "Tests.",
+      "APPROVE\n\nGood.",
+      "## Branch Name\n\nfeature/page\n\n## Commit Message\n\nfeat: add page\n\n## PR Title\n\nAdd page\n\n## PR Body\n\nAdds page."
+    ])
 
     tmp_dir = Path.join(System.tmp_dir!(), "pyre_list_test_#{System.unique_integer([:positive])}")
     File.mkdir_p!(Path.join(tmp_dir, "priv/pyre/features"))
 
     {:ok, id} =
       Pyre.RunServer.start_run("List test feature",
+        workflow: :overnight_feature,
         llm: AgentMock,
         streaming: false,
         project_dir: tmp_dir

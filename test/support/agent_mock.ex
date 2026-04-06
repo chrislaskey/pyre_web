@@ -1,6 +1,6 @@
 defmodule PyreWeb.Test.AgentMock do
   @moduledoc false
-  @behaviour Pyre.LLM
+  use Pyre.LLM
 
   @agent_name __MODULE__.Responses
 

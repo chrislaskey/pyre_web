@@ -154,18 +154,11 @@
       </label>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <.backend_card
-          :for={
-            {value, label, desc} <- [
-              {:claude_cli, "Claude CLI", "From Anthropic"},
-              {:cursor_cli, "Cursor CLI", "From Cursor IDE"},
-              {:codex_cli, "Codex CLI", "From OpenAI"},
-              {:req_llm, "API (ReqLLM)", "Any major provider"}
-            ]
-          }
-          value={value}
-          label={label}
-          description={desc}
-          selected={@llm_backend == value}
+          :for={backend <- @backends}
+          value={backend.name}
+          label={backend.label}
+          description={backend.description}
+          selected={@llm_backend == backend.name}
         />
       </div>
     </div>
