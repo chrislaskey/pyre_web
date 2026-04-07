@@ -60,7 +60,7 @@ defmodule PyreWeb.Components.Layouts do
     <div class="breadcrumbs text-sm text-base-content/60 mb-4">
       <ul>
         <li>
-          <.link class="flex gap-x-1" navigate={home}>
+          <.link class="flex gap-x-1" navigate={@home}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
