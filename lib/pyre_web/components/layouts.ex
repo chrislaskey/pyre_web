@@ -53,11 +53,14 @@ defmodule PyreWeb.Components.Layouts do
   attr :prefix, :string, required: true
 
   def breadcrumbs(assigns) do
+    home = if assigns[:prefix] == "", do: "/", else: assigns[:prefix]
+    assigns = assign(assigns, :home, home)
+
     ~H"""
     <div class="breadcrumbs text-sm text-base-content/60 mb-4">
       <ul>
         <li>
-          <.link class="flex gap-x-1" navigate={@prefix}>
+          <.link class="flex gap-x-1" navigate={home}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
