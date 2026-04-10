@@ -187,22 +187,29 @@ defmodule PyreWeb.RunNewLive do
 
     llm_module = apply(Pyre.Config, :get_llm_backend, [socket.assigns.llm_backend])
 
-    case apply(Pyre.RunServer, :start_run, [
-           desc,
-           [
-             workflow: socket.assigns.workflow,
-             skipped_stages: skipped,
-             interactive_stages: interactive,
-             attachments: attachments,
-             llm: llm_module,
-             feature: feature
-           ]
-         ]) do
-      {:ok, run_id} ->
-        {:noreply, push_navigate(socket, to: pyre_path(socket, "/runs/#{run_id}"))}
+    opts = [
+      workflow: socket.assigns.workflow,
+      skipped_stages: skipped,
+      interactive_stages: interactive,
+      attachments: attachments,
+      llm: llm_module,
+      feature: feature
+    ]
+
+    case PyreWeb.Config.call(:workflow_submit, [desc, opts]) do
+      {:ok, result} ->
+        if redirect_to = Keyword.get(result, :redirect_to) do
+          {:noreply, push_navigate(socket, to: pyre_path(socket, redirect_to))}
+        else
+          {:noreply, put_flash(socket, :info, "Workflow submitted successfully")}
+        end
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, "Failed to start run: #{inspect(reason)}")}
+        {:noreply, put_flash(socket, :error, "Failed to submit workflow: #{inspect(reason)}")}
+
+      nil ->
+        # Config.call/2 returns nil on exception
+        {:noreply, put_flash(socket, :error, "Failed to submit workflow")}
     end
   end
 

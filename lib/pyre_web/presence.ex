@@ -47,8 +47,10 @@ defmodule PyreWeb.Presence do
   @doc """
   Returns simplified presence data for the connections topic.
 
-  Each entry is a map with `:connection_id` and the metadata sent on join
-  (name, cpu_cores, cpu_brand, memory_gb, os_version).
+  Each entry is a map with `"connection_id"` plus whatever metadata the
+  client sent on join. Metadata is stored as-is (string keys from JSON).
+  Clients can update their metadata at any time via the `"update_metadata"`
+  channel message.
 
   Returns `[]` if Presence is not running.
   """

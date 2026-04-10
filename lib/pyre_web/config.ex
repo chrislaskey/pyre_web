@@ -132,6 +132,37 @@ defmodule PyreWeb.Config do
   """
   @callback sidebar_footer(assigns :: map()) :: Phoenix.LiveView.Rendered.t()
 
+  # -- Workflow Callbacks --
+
+  @doc """
+  Called when a user submits a new workflow run from the UI.
+
+  Receives the feature description and fully-prepared options keyword list
+  containing:
+
+    * `:workflow` - atom (`:chat`, `:feature`, `:prototype`, etc.)
+    * `:skipped_stages` - list of atoms
+    * `:interactive_stages` - list of atoms
+    * `:attachments` - list of `%{filename, content, media_type}` maps
+    * `:llm` - LLM backend module (e.g., `Pyre.LLM.ClaudeCLI`)
+    * `:feature` - optional feature name string or nil
+
+  Returns `{:ok, opts}` where `opts` is a keyword list. Recognized keys:
+
+    * `:redirect_to` - path string relative to the pyre_web mount point
+      (e.g., `"/runs/abc123"` or `"/workflows/42"`). When present, the UI
+      navigates to that path. When absent, the UI stays on the current
+      page and shows a success flash.
+
+  Default implementation: starts the run immediately via
+  `Pyre.RunServer.start_run/2` and redirects to the run show page.
+
+  Override in consuming apps to enqueue the workflow (e.g., via Oban),
+  persist it to a database, or handle submission however the host app needs.
+  """
+  @callback workflow_submit(description :: String.t(), opts :: keyword()) ::
+              {:ok, keyword()} | {:error, term()}
+
   # -- Public API --
 
   @doc """
@@ -210,6 +241,14 @@ defmodule PyreWeb.Config do
       @impl PyreWeb.Config
       def sidebar_footer(var!(assigns)), do: ~H""
 
+      @impl PyreWeb.Config
+      def workflow_submit(description, opts) do
+        case apply(Pyre.RunServer, :start_run, [description, opts]) do
+          {:ok, run_id} -> {:ok, redirect_to: "/runs/#{run_id}"}
+          {:error, _} = error -> error
+        end
+      end
+
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
                      authorize_run_create: 2,
@@ -219,7 +258,8 @@ defmodule PyreWeb.Config do
                      update_github_app: 1,
                      list_github_apps: 0,
                      additional_nav_links: 1,
-                     sidebar_footer: 1
+                     sidebar_footer: 1,
+                     workflow_submit: 2
     end
   end
 
@@ -235,6 +275,13 @@ defmodule PyreWeb.Config do
   def list_github_apps, do: list_github_apps_from_env()
   def additional_nav_links(assigns), do: ~H""
   def sidebar_footer(assigns), do: ~H""
+
+  def workflow_submit(description, opts) do
+    case apply(Pyre.RunServer, :start_run, [description, opts]) do
+      {:ok, run_id} -> {:ok, "/runs/#{run_id}"}
+      {:error, _} = error -> error
+    end
+  end
 
   @doc false
   def list_github_apps_from_env do

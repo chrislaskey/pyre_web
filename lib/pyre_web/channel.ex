@@ -42,13 +42,7 @@ defmodule PyreWeb.Channel do
     connection_id =
       socket.assigns[:connection_id] || params["connection_id"] || socket.id || "anonymous"
 
-    metadata = %{
-      name: params["name"] || "Unknown",
-      cpu_cores: params["cpu_cores"],
-      cpu_brand: params["cpu_brand"],
-      memory_gb: params["memory_gb"],
-      os_version: params["os_version"]
-    }
+    metadata = Map.drop(params, ["connection_id"])
 
     # Subscribe to actions targeted at this specific connection
     if pubsub = Application.get_env(:pyre, :pubsub) do
@@ -75,6 +69,16 @@ defmodule PyreWeb.Channel do
     end
 
     {:noreply, socket}
+  end
+
+  def handle_in("update_metadata", params, socket) do
+    if PyreWeb.Presence.running?() do
+      PyreWeb.Presence.update(socket, socket.assigns.connection_id, fn existing_meta ->
+        Map.merge(existing_meta, params)
+      end)
+    end
+
+    {:reply, :ok, socket}
   end
 
   def handle_in("action_complete", %{"execution_id" => id} = payload, socket) do
@@ -107,4 +111,5 @@ defmodule PyreWeb.Channel do
     push(socket, "action", Map.put(action, :execution_id, execution_id))
     {:noreply, socket}
   end
+
 end
