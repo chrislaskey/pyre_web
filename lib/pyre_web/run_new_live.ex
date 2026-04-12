@@ -4,31 +4,11 @@ defmodule PyreWeb.RunNewLive do
   """
   use PyreWeb.Web, :live_view
 
-  @overnight_feature_stages [
-    {:planning, "Product Manager"},
-    {:designing, "Designer"},
-    {:implementing, "Programmer"},
-    {:testing, "Test Writer"},
-    {:reviewing, "QA Reviewer"},
-    {:shipping, "Shipper"}
-  ]
-
-  @feature_stages [
-    {:architecting, "Software Architect"},
-    {:pr_setup, "PR Setup"},
-    {:engineering, "Software Engineer"}
-  ]
-
-  @prototype_stages [{:prototyping, "Prototype Engineer"}]
-
-  @task_stages [{:tasking, "Generalist"}]
-
-  @code_review_stages [{:reviewing, "PR Reviewer"}]
-
-  @chat_stages [{:generalist, "Generalist"}]
-
   @impl true
   def mount(_params, _session, socket) do
+    workflows = apply(Pyre.Config, :list_workflows, [])
+    default_entry = Enum.find(workflows, fn w -> w.name == :chat end) || hd(workflows)
+
     backends = apply(Pyre.Config, :list_llm_backends, [])
     default_module = apply(Pyre.Config, :get_llm_backend, [nil])
     default_name = apply(Pyre.Config, :backend_name_for_module, [default_module])
@@ -40,10 +20,11 @@ defmodule PyreWeb.RunNewLive do
         form: to_form(%{"feature_description" => "", "feature_name" => ""}, as: :run),
         feature_name: "",
         feature_suggestions: [],
-        workflow: :chat,
-        toggleable_stages: @chat_stages,
+        workflows: workflows,
+        workflow: default_entry.name,
+        toggleable_stages: default_entry.stages,
         skipped_stages: MapSet.new(),
-        interactive_stages: MapSet.new([:generalist]),
+        interactive_stages: default_interactive_for(default_entry),
         backends: backends,
         llm_backend: default_name
       )
@@ -85,22 +66,15 @@ defmodule PyreWeb.RunNewLive do
   end
 
   def handle_event("select_workflow", %{"workflow" => workflow_str}, socket) do
-    {workflow, stages, interactive} =
-      case workflow_str do
-        "chat" -> {:chat, @chat_stages, MapSet.new([:generalist])}
-        "feature" -> {:feature, @feature_stages, MapSet.new([:architecting, :engineering])}
-        "prototype" -> {:prototype, @prototype_stages, MapSet.new([:prototyping])}
-        "task" -> {:task, @task_stages, MapSet.new()}
-        "code_review" -> {:code_review, @code_review_stages, MapSet.new()}
-        "overnight_feature" -> {:overnight_feature, @overnight_feature_stages, MapSet.new()}
-      end
+    workflow_name = String.to_existing_atom(workflow_str)
+    entry = Enum.find(socket.assigns.workflows, fn w -> w.name == workflow_name end)
 
     socket =
       assign(socket,
-        workflow: workflow,
-        toggleable_stages: stages,
+        workflow: entry.name,
+        toggleable_stages: entry.stages,
         skipped_stages: MapSet.new(),
-        interactive_stages: interactive
+        interactive_stages: default_interactive_for(entry)
       )
 
     {:noreply, socket}
@@ -268,6 +242,16 @@ defmodule PyreWeb.RunNewLive do
       <span>{msg}</span>
     </div>
     """
+  end
+
+  defp default_interactive_for(workflow_entry) do
+    mod = workflow_entry.module
+
+    if Code.ensure_loaded?(mod) and function_exported?(mod, :default_interactive_stages, 0) do
+      MapSet.new(apply(mod, :default_interactive_stages, []))
+    else
+      MapSet.new()
+    end
   end
 
   defp upload_error_to_string(:too_large), do: "File too large (max 10 MB)"

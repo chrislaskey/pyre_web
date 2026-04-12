@@ -8,37 +8,6 @@ defmodule PyreWeb.RunShowLive do
   """
   use PyreWeb.Web, :live_view
 
-  @overnight_feature_phases [
-    {:planning, "Planning"},
-    {:designing, "Design"},
-    {:implementing, "Implementation"},
-    {:testing, "Testing"},
-    {:reviewing, "Review"},
-    {:shipping, "Shipping"}
-  ]
-
-  @overnight_feature_order [:planning, :designing, :implementing, :testing, :reviewing, :shipping]
-
-  @feature_phases [
-    {:architecting, "Architecture"},
-    {:pr_setup, "PR Setup"},
-    {:engineering, "Engineering"}
-  ]
-
-  @feature_order [:architecting, :pr_setup, :engineering]
-
-  @prototype_phases [{:prototyping, "Prototyping"}]
-  @prototype_order [:prototyping]
-
-  @task_phases [{:tasking, "Task"}]
-  @task_order [:tasking]
-
-  @code_review_phases [{:reviewing, "Review"}]
-  @code_review_order [:reviewing]
-
-  @chat_phases [{:generalist, "Generalist"}]
-  @chat_order [:generalist]
-
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     if connected?(socket) do
@@ -54,28 +23,31 @@ defmodule PyreWeb.RunShowLive do
 
         raw_session_ids = Map.get(run, :session_ids, %{})
 
-        socket
-        |> assign(
-          page_title: "Run #{id} — Pyre",
-          run_id: id,
-          run: run,
-          status: Map.get(run, :status, :unknown),
-          phase: Map.get(run, :phase),
-          feature: Map.get(run, :feature),
-          feature_description: Map.get(run, :feature_description, ""),
-          skipped_stages: Map.get(run, :skipped_stages, MapSet.new()),
-          interactive_stages: Map.get(run, :interactive_stages, MapSet.new()),
-          waiting_for_input: Map.get(run, :waiting_for_input, false),
-          waiting_phase: Map.get(run, :phase),
-          backend: Map.get(run, :backend, "other"),
-          raw_session_ids: raw_session_ids,
-          session_ids: resolve_session_ids(raw_session_ids),
-          phases: phases,
-          phase_order: phase_order,
-          confirm_stop: false,
-          reply_text: ""
-        )
-        |> stream(:items, Map.get(run, :log, []))
+        socket =
+          socket
+          |> assign(
+            page_title: "Run #{id} — Pyre",
+            run_id: id,
+            run: run,
+            status: Map.get(run, :status, :unknown),
+            phase: Map.get(run, :phase),
+            feature: Map.get(run, :feature),
+            feature_description: Map.get(run, :feature_description, ""),
+            skipped_stages: Map.get(run, :skipped_stages, MapSet.new()),
+            interactive_stages: Map.get(run, :interactive_stages, MapSet.new()),
+            waiting_for_input: Map.get(run, :waiting_for_input, false),
+            waiting_phase: Map.get(run, :phase),
+            backend: Map.get(run, :backend, "other"),
+            raw_session_ids: raw_session_ids,
+            session_ids: resolve_session_ids(raw_session_ids),
+            phases: phases,
+            phase_order: phase_order,
+            confirm_stop: false,
+            reply_text: ""
+          )
+          |> stream(:items, Map.get(run, :log, []))
+
+        {:ok, socket}
 
       _ ->
         {:ok, redirect(socket, to: pyre_path(socket, "/runs"))}
@@ -83,13 +55,14 @@ defmodule PyreWeb.RunShowLive do
   end
 
   defp phases_for_workflow(workflow) do
-    case workflow do
-      :chat -> {@chat_phases, @chat_order}
-      :feature -> {@feature_phases, @feature_order}
-      :prototype -> {@prototype_phases, @prototype_order}
-      :task -> {@task_phases, @task_order}
-      :code_review -> {@code_review_phases, @code_review_order}
-      :overnight_feature -> {@overnight_feature_phases, @overnight_feature_order}
+    case apply(Pyre.Config, :get_workflow, [workflow]) do
+      {:ok, entry} ->
+        phase_order = Enum.map(entry.stages, fn {stage, _} -> stage end)
+        phases = Enum.map(phase_order, fn stage -> {stage, phase_label(stage)} end)
+        {phases, phase_order}
+
+      :error ->
+        {[], []}
     end
   end
 

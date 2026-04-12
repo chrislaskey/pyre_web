@@ -21,22 +21,12 @@
         </label>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <.workflow_card
-            :for={
-              {value, label, desc, badge} <- [
-                {:chat, "Chat", "Build anything interactively", "Interactive"},
-                {:prototype, "Prototype", "Visual prototype", "Interactive"},
-                {:feature, "Feature", "Architect, PR, and engineer", "Interactive"},
-                {:overnight_feature, "Overnight Feature", "Full pipeline, plan to ship",
-                 "Background"},
-                {:task, "Task", "Single-step generalist task", "Background"},
-                {:code_review, "Code Review", "Review existing code", "Background"}
-              ]
-            }
-            value={value}
-            label={label}
-            description={desc}
-            badge={badge}
-            selected={@workflow == value}
+            :for={entry <- @workflows}
+            value={entry.name}
+            label={entry.label}
+            description={entry.description}
+            badge={if entry.mode == :interactive, do: "Interactive", else: "Background"}
+            selected={@workflow == entry.name}
           />
         </div>
       </div>
