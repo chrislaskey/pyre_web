@@ -18,33 +18,10 @@ defmodule PyreWeb.RunShowLive do
 
     case PyreWeb.Config.call(:get_run, [id]) do
       {:ok, run} ->
-        workflow = Map.get(run, :workflow)
-        {phases, phase_order} = if workflow, do: phases_for_workflow(workflow), else: {[], []}
-
-        raw_session_ids = Map.get(run, :session_ids, %{})
-
         socket =
           socket
-          |> assign(
-            page_title: "Run #{id} — Pyre",
-            run_id: id,
-            run: run,
-            status: Map.get(run, :status, :unknown),
-            phase: Map.get(run, :phase),
-            feature: Map.get(run, :feature),
-            feature_description: Map.get(run, :feature_description, ""),
-            skipped_stages: Map.get(run, :skipped_stages, MapSet.new()),
-            interactive_stages: Map.get(run, :interactive_stages, MapSet.new()),
-            waiting_for_input: Map.get(run, :waiting_for_input, false),
-            waiting_phase: Map.get(run, :phase),
-            backend: Map.get(run, :backend, "other"),
-            raw_session_ids: raw_session_ids,
-            session_ids: resolve_session_ids(raw_session_ids),
-            phases: phases,
-            phase_order: phase_order,
-            confirm_stop: false,
-            reply_text: ""
-          )
+          |> assign(page_title: "Run #{id} — Pyre", run_id: id, confirm_stop: false, reply_text: "")
+          |> assign_from_run(run)
           |> stream(:items, Map.get(run, :log, []))
 
         {:ok, socket}
@@ -141,11 +118,23 @@ defmodule PyreWeb.RunShowLive do
   end
 
   def handle_info({:pyre_run_status, _id, status}, socket) do
+    # Re-fetch the full run state on every status change. The get_run
+    # callback may return fundamentally different data depending on the
+    # status (e.g., a host app might switch from DB-only to RunServer
+    # data when a queued run starts). Letting get_run be the single
+    # source of truth keeps pyre_web agnostic about host-app statuses.
     socket =
-      socket
-      |> assign(status: status)
-      |> maybe_notify_status(socket.assigns.run_id, status)
+      case PyreWeb.Config.call(:get_run, [socket.assigns.run_id]) do
+        {:ok, run} ->
+          socket
+          |> assign_from_run(run)
+          |> stream(:items, Map.get(run, :log, []), reset: true)
 
+        _ ->
+          assign(socket, status: status)
+      end
+
+    socket = maybe_notify_status(socket, socket.assigns.run_id, status)
     {:noreply, socket}
   end
 
@@ -433,6 +422,33 @@ defmodule PyreWeb.RunShowLive do
   end
 
   defp maybe_notify_status(socket, _run_id, _status), do: socket
+
+  defp assign_from_run(socket, run) do
+    {phases, phase_order} =
+      case Map.get(run, :workflow) do
+        nil -> {[], []}
+        workflow -> phases_for_workflow(workflow)
+      end
+
+    raw_session_ids = Map.get(run, :session_ids, %{})
+
+    assign(socket,
+      run: run,
+      status: Map.get(run, :status, :unknown),
+      phase: Map.get(run, :phase),
+      feature: Map.get(run, :feature),
+      feature_description: Map.get(run, :feature_description, ""),
+      skipped_stages: Map.get(run, :skipped_stages, MapSet.new()),
+      interactive_stages: Map.get(run, :interactive_stages, MapSet.new()),
+      waiting_for_input: Map.get(run, :waiting_for_input, false),
+      waiting_phase: Map.get(run, :phase),
+      backend: Map.get(run, :backend, "other"),
+      raw_session_ids: raw_session_ids,
+      session_ids: resolve_session_ids(raw_session_ids),
+      phases: phases,
+      phase_order: phase_order
+    )
+  end
 
   defp resolve_session_ids(raw_ids) do
     Map.new(raw_ids, fn {phase, pyre_id} ->
