@@ -107,7 +107,7 @@ defmodule PyreWeb.RunShowLive do
     action = %{type: :stop, run_id: socket.assigns.run_id}
 
     with :ok <- authorize_control(action, socket) do
-      apply(Pyre.RunServer, :stop_run, [socket.assigns.run_id])
+      PyreWeb.Config.call(:run_stop, [socket.assigns.run_id])
       {:noreply, assign(socket, confirm_stop: false)}
     end
   end

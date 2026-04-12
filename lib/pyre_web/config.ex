@@ -213,6 +213,19 @@ defmodule PyreWeb.Config do
   """
   @callback render_run(assigns :: map()) :: Phoenix.LiveView.Rendered.t()
 
+  @doc """
+  Called when a user confirms stopping a running workflow.
+
+  Receives the `run_id` string. The default implementation stops the
+  in-memory RunServer process via `Pyre.RunServer.stop_run/1`.
+
+  Override in consuming apps to also cancel queued jobs, update
+  persistent records, or perform other cleanup.
+
+  Returns `:ok` or `{:error, reason}`.
+  """
+  @callback run_stop(run_id :: String.t()) :: :ok | {:error, term()}
+
   # -- Public API --
 
   @doc """
@@ -303,6 +316,8 @@ defmodule PyreWeb.Config do
       def get_run(run_id), do: apply(Pyre.RunServer, :get_state, [run_id])
       @impl PyreWeb.Config
       def render_run(var!(assigns)), do: ~H""
+      @impl PyreWeb.Config
+      def run_stop(run_id), do: apply(Pyre.RunServer, :stop_run, [run_id])
 
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
@@ -316,7 +331,8 @@ defmodule PyreWeb.Config do
                      sidebar_footer: 1,
                      run_submit: 2,
                      get_run: 1,
-                     render_run: 1
+                     render_run: 1,
+                     run_stop: 1
     end
   end
 
@@ -342,6 +358,7 @@ defmodule PyreWeb.Config do
 
   def get_run(run_id), do: apply(Pyre.RunServer, :get_state, [run_id])
   def render_run(assigns), do: ~H""
+  def run_stop(run_id), do: apply(Pyre.RunServer, :stop_run, [run_id])
 
   @doc false
   def list_github_apps_from_env do
