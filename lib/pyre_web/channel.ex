@@ -111,5 +111,4 @@ defmodule PyreWeb.Channel do
     push(socket, "action", Map.put(action, :execution_id, execution_id))
     {:noreply, socket}
   end
-
 end

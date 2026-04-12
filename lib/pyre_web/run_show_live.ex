@@ -20,7 +20,12 @@ defmodule PyreWeb.RunShowLive do
       {:ok, run} ->
         socket =
           socket
-          |> assign(page_title: "Run #{id} — Pyre", run_id: id, confirm_stop: false, reply_text: "")
+          |> assign(
+            page_title: "Run #{id} — Pyre",
+            run_id: id,
+            confirm_stop: false,
+            reply_text: ""
+          )
           |> assign_from_run(run)
           |> stream(:items, Map.get(run, :log, []))
 
@@ -396,7 +401,8 @@ defmodule PyreWeb.RunShowLive do
   defp status_badge_class(:error), do: "badge-error"
   defp status_badge_class(_), do: "badge-neutral"
 
-  defp status_label(status), do: status |> to_string() |> String.replace("_", " ") |> String.capitalize()
+  defp status_label(status),
+    do: status |> to_string() |> String.replace("_", " ") |> String.capitalize()
 
   defp item_class(:log), do: "block mt-1 text-info"
   defp item_class(:error), do: "block mt-1 text-error"
