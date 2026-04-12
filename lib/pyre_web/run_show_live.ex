@@ -47,47 +47,49 @@ defmodule PyreWeb.RunShowLive do
       end
     end
 
-    case apply(Pyre.RunServer, :get_state, [id]) do
-      {:ok, run_state} ->
-        workflow = Map.get(run_state, :workflow, :feature)
+    case PyreWeb.Config.call(:get_run, [id]) do
+      {:ok, run} ->
+        workflow = Map.get(run, :workflow)
+        {phases, phase_order} = if workflow, do: phases_for_workflow(workflow), else: {[], []}
 
-        {phases, phase_order} =
-          case workflow do
-            :chat -> {@chat_phases, @chat_order}
-            :feature -> {@feature_phases, @feature_order}
-            :prototype -> {@prototype_phases, @prototype_order}
-            :task -> {@task_phases, @task_order}
-            :code_review -> {@code_review_phases, @code_review_order}
-            :overnight_feature -> {@overnight_feature_phases, @overnight_feature_order}
-          end
+        raw_session_ids = Map.get(run, :session_ids, %{})
 
-        socket =
-          socket
-          |> assign(
-            page_title: "Run #{id} — Pyre",
-            run_id: id,
-            status: run_state.status,
-            phase: run_state.phase,
-            feature: Map.get(run_state, :feature),
-            feature_description: run_state.feature_description,
-            skipped_stages: run_state.skipped_stages,
-            interactive_stages: Map.get(run_state, :interactive_stages, MapSet.new()),
-            waiting_for_input: Map.get(run_state, :waiting_for_input, false),
-            waiting_phase: run_state.phase,
-            backend: Map.get(run_state, :backend, "other"),
-            raw_session_ids: Map.get(run_state, :session_ids, %{}),
-            session_ids: resolve_session_ids(Map.get(run_state, :session_ids, %{})),
-            phases: phases,
-            phase_order: phase_order,
-            confirm_stop: false,
-            reply_text: ""
-          )
-          |> stream(:items, run_state.log)
+        socket
+        |> assign(
+          page_title: "Run #{id} — Pyre",
+          run_id: id,
+          run: run,
+          status: Map.get(run, :status, :unknown),
+          phase: Map.get(run, :phase),
+          feature: Map.get(run, :feature),
+          feature_description: Map.get(run, :feature_description, ""),
+          skipped_stages: Map.get(run, :skipped_stages, MapSet.new()),
+          interactive_stages: Map.get(run, :interactive_stages, MapSet.new()),
+          waiting_for_input: Map.get(run, :waiting_for_input, false),
+          waiting_phase: Map.get(run, :phase),
+          backend: Map.get(run, :backend, "other"),
+          raw_session_ids: raw_session_ids,
+          session_ids: resolve_session_ids(raw_session_ids),
+          phases: phases,
+          phase_order: phase_order,
+          confirm_stop: false,
+          reply_text: ""
+        )
+        |> stream(:items, Map.get(run, :log, []))
 
-        {:ok, socket}
-
-      {:error, :not_found} ->
+      _ ->
         {:ok, redirect(socket, to: pyre_path(socket, "/runs"))}
+    end
+  end
+
+  defp phases_for_workflow(workflow) do
+    case workflow do
+      :chat -> {@chat_phases, @chat_order}
+      :feature -> {@feature_phases, @feature_order}
+      :prototype -> {@prototype_phases, @prototype_order}
+      :task -> {@task_phases, @task_order}
+      :code_review -> {@code_review_phases, @code_review_order}
+      :overnight_feature -> {@overnight_feature_phases, @overnight_feature_order}
     end
   end
 
@@ -432,11 +434,7 @@ defmodule PyreWeb.RunShowLive do
   defp status_badge_class(:error), do: "badge-error"
   defp status_badge_class(_), do: "badge-neutral"
 
-  defp status_label(:running), do: "Running"
-  defp status_label(:complete), do: "Complete"
-  defp status_label(:stopped), do: "Stopped"
-  defp status_label(:error), do: "Error"
-  defp status_label(_), do: ""
+  defp status_label(status), do: status |> to_string() |> String.replace("_", " ") |> String.capitalize()
 
   defp item_class(:log), do: "block mt-1 text-info"
   defp item_class(:error), do: "block mt-1 text-error"

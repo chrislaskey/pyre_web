@@ -157,11 +157,61 @@ defmodule PyreWeb.Config do
   Default implementation: starts the run immediately via
   `Pyre.RunServer.start_run/2` and redirects to the run show page.
 
-  Override in consuming apps to enqueue the workflow (e.g., via Oban),
-  persist it to a database, or handle submission however the host app needs.
+  Override in consuming apps to implement a more complex workflow like job
+  queuing and delayed execution.
   """
   @callback run_submit(description :: String.t(), opts :: keyword()) ::
               {:ok, keyword()} | {:error, term()}
+
+  # -- Run Callbacks --
+
+  @doc """
+  Returns the full run state for a given run ID.
+
+  Called by `RunShowLive` on mount as the single source of run data.
+  The default implementation fetches state from `Pyre.RunServer.get_state/1`.
+
+  Host apps can override this callback to:
+
+    * Merge in additional data from a database
+    * Provide a fallback when the RunServer process is not alive
+      (e.g., for queued or completed runs)
+    * Add custom keys that `render_run/1` can use
+
+  Should return a map with any of the following keys:
+
+    * `:status` - atom (e.g., `:queued`, `:running`, `:complete`, `:error`)
+    * `:phase` - current phase atom
+    * `:feature` - feature name string or nil
+    * `:feature_description` - the original description string
+    * `:workflow` - atom (`:chat`, `:feature`, etc.)
+    * `:skipped_stages` - MapSet of skipped stage atoms
+    * `:interactive_stages` - MapSet of interactive stage atoms
+    * `:waiting_for_input` - boolean
+    * `:backend` - backend name string
+    * `:session_ids` - map of phase to session ID
+    * `:log` - list of log entries for streaming output
+    * Any other keys the host app wants to make available to `render_run/1`
+
+  Returns `nil` when the run cannot be found (triggers a redirect).
+
+  Default implementation: calls `Pyre.RunServer.get_state/1`.
+  """
+  @callback get_run(run_id :: String.t()) :: {:ok, any()} | {:error, any()}
+
+  @doc """
+  Returns HEEx markup to render host-app-specific content on the run
+  show page.
+
+  The `assigns` map includes `:run_id` and all assigns from `RunShowLive`,
+  plus `:run` containing the full map returned by `get_run/1`.
+
+  Default implementation: renders nothing (empty HEEx).
+
+  Override in consuming apps to render queue status, worker assignment,
+  or other host-app-specific information on the run page.
+  """
+  @callback render_run(assigns :: map()) :: Phoenix.LiveView.Rendered.t()
 
   # -- Public API --
 
@@ -249,6 +299,11 @@ defmodule PyreWeb.Config do
         end
       end
 
+      @impl PyreWeb.Config
+      def get_run(run_id), do: apply(Pyre.RunServer, :get_state, [run_id])
+      @impl PyreWeb.Config
+      def render_run(var!(assigns)), do: ~H""
+
       defoverridable authorize_socket_connect: 2,
                      authorize_channel_join: 2,
                      authorize_run_create: 2,
@@ -259,7 +314,9 @@ defmodule PyreWeb.Config do
                      list_github_apps: 0,
                      additional_nav_links: 1,
                      sidebar_footer: 1,
-                     run_submit: 2
+                     run_submit: 2,
+                     get_run: 1,
+                     render_run: 1
     end
   end
 
@@ -278,10 +335,13 @@ defmodule PyreWeb.Config do
 
   def run_submit(description, opts) do
     case apply(Pyre.RunServer, :start_run, [description, opts]) do
-      {:ok, run_id} -> {:ok, "/runs/#{run_id}"}
+      {:ok, run_id} -> {:ok, redirect_to: "/runs/#{run_id}"}
       {:error, _} = error -> error
     end
   end
+
+  def get_run(run_id), do: apply(Pyre.RunServer, :get_state, [run_id])
+  def render_run(assigns), do: ~H""
 
   @doc false
   def list_github_apps_from_env do

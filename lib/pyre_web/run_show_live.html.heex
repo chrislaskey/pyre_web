@@ -35,6 +35,8 @@
     {@feature_description}
   </div>
 
+  {PyreWeb.Config.call(:render_run, [assigns])}
+
   <.workflow_panel
     phases={@phases}
     phase_order={@phase_order}
