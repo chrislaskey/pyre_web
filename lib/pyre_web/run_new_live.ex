@@ -196,7 +196,7 @@ defmodule PyreWeb.RunNewLive do
       feature: feature
     ]
 
-    case PyreWeb.Config.call(:workflow_submit, [desc, opts]) do
+    case PyreWeb.Config.call(:run_submit, [desc, opts]) do
       {:ok, result} ->
         if redirect_to = Keyword.get(result, :redirect_to) do
           {:noreply, push_navigate(socket, to: pyre_path(socket, redirect_to))}

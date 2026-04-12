@@ -160,7 +160,7 @@ defmodule PyreWeb.Config do
   Override in consuming apps to enqueue the workflow (e.g., via Oban),
   persist it to a database, or handle submission however the host app needs.
   """
-  @callback workflow_submit(description :: String.t(), opts :: keyword()) ::
+  @callback run_submit(description :: String.t(), opts :: keyword()) ::
               {:ok, keyword()} | {:error, term()}
 
   # -- Public API --
@@ -242,7 +242,7 @@ defmodule PyreWeb.Config do
       def sidebar_footer(var!(assigns)), do: ~H""
 
       @impl PyreWeb.Config
-      def workflow_submit(description, opts) do
+      def run_submit(description, opts) do
         case apply(Pyre.RunServer, :start_run, [description, opts]) do
           {:ok, run_id} -> {:ok, redirect_to: "/runs/#{run_id}"}
           {:error, _} = error -> error
@@ -259,7 +259,7 @@ defmodule PyreWeb.Config do
                      list_github_apps: 0,
                      additional_nav_links: 1,
                      sidebar_footer: 1,
-                     workflow_submit: 2
+                     run_submit: 2
     end
   end
 
@@ -276,7 +276,7 @@ defmodule PyreWeb.Config do
   def additional_nav_links(assigns), do: ~H""
   def sidebar_footer(assigns), do: ~H""
 
-  def workflow_submit(description, opts) do
+  def run_submit(description, opts) do
     case apply(Pyre.RunServer, :start_run, [description, opts]) do
       {:ok, run_id} -> {:ok, "/runs/#{run_id}"}
       {:error, _} = error -> error
