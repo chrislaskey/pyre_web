@@ -12,7 +12,7 @@ defmodule PyreWeb.RunListLive do
       end
     end
 
-    runs = apply(Pyre.RunServer, :list_runs, [])
+    runs = PyreWeb.Config.call(:list_runs, []) || []
 
     socket =
       assign(socket,
@@ -30,7 +30,7 @@ defmodule PyreWeb.RunListLive do
 
   @impl true
   def handle_info({:pyre_run_status, id, status}, socket) do
-    runs = apply(Pyre.RunServer, :list_runs, [])
+    runs = PyreWeb.Config.call(:list_runs, []) || []
 
     socket =
       socket

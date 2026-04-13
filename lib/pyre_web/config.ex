@@ -166,6 +166,26 @@ defmodule PyreWeb.Config do
   # -- Run Callbacks --
 
   @doc """
+  Returns a list of runs for the index page.
+
+  Each entry should be a map with at least these keys:
+
+    * `:id` - the run ID string (used for links)
+    * `:status` - atom (e.g., `:queued`, `:running`, `:complete`, `:error`)
+    * `:feature` - feature name string or nil
+    * `:phase` - current phase atom or nil
+    * `:feature_description` - the original description string
+    * `:started_at` - `DateTime` or nil
+
+  Default implementation: calls `Pyre.RunServer.list_runs/0`, which only
+  returns runs with an active in-memory process.
+
+  Override in consuming apps to return persisted runs from a database,
+  merged with live RunServer state when available.
+  """
+  @callback list_runs() :: [map()]
+
+  @doc """
   Returns the full run state for a given run ID.
 
   Called by `RunShowLive` on mount as the single source of run data.
@@ -313,6 +333,8 @@ defmodule PyreWeb.Config do
       end
 
       @impl PyreWeb.Config
+      def list_runs, do: apply(Pyre.RunServer, :list_runs, [])
+      @impl PyreWeb.Config
       def get_run(run_id), do: apply(Pyre.RunServer, :get_state, [run_id])
       @impl PyreWeb.Config
       def render_run(var!(assigns)), do: ~H""
@@ -330,6 +352,7 @@ defmodule PyreWeb.Config do
                      additional_nav_links: 1,
                      sidebar_footer: 1,
                      run_submit: 2,
+                     list_runs: 0,
                      get_run: 1,
                      render_run: 1,
                      run_stop: 1
@@ -356,6 +379,7 @@ defmodule PyreWeb.Config do
     end
   end
 
+  def list_runs, do: apply(Pyre.RunServer, :list_runs, [])
   def get_run(run_id), do: apply(Pyre.RunServer, :get_state, [run_id])
   def render_run(assigns), do: ~H""
   def run_stop(run_id), do: apply(Pyre.RunServer, :stop_run, [run_id])
